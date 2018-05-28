@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+import "scalapb/scalapb.proto";
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/timestamp.proto";
+
+package com.oasis.third.sms.domain;
+
+message Created
+{
+  option (scalapb.message).extends       = "com.oasis.third.sms.protocol.SmsEvent";
+  string                      id         = 1;
+  string                      mobile     = 2;
+  string                      type       = 3;
+  google.protobuf.StringValue captcha    = 4;
+  string                      messageId  = 5;
+  google.protobuf.Timestamp   createTime = 6;
+}

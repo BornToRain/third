@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+import "scalapb/scalapb.proto";
+
+package com.oasis.third.pa.domain;
+
+//订单详情
+message OrderDetail
+{
+  option (scalapb.message).extends = "com.oasis.third.pa.protocol.PAValueObject";
+  string id       = 1;
+  string name     = 2;
+  int32  count    = 3;
+  string uri      = 4;
+  string imageUri = 5;
+  string subject  = 6;
+  int32  amount   = 7;
+}

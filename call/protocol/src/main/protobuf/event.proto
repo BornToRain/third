@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+import "scalapb/scalapb.proto";
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/timestamp.proto";
+
+package com.oasis.third.call.domain;
+
+message Bound
+{
+  option (scalapb.message).extends      = "com.oasis.third.call.protocol.CallEvent";
+  string                      id        = 1;
+  string                      call      = 2;
+  string                      to        = 3;
+  google.protobuf.StringValue noticeUri = 4;
+  google.protobuf.StringValue thirdId   = 5;
+}
+
+message HungUp
+{
+  option (scalapb.message).extends = "com.oasis.third.call.protocol.CallEvent";
+  string                      id   = 1;
+}
+
+message Updated
+{
+  option (scalapb.message).extends        = "com.oasis.third.call.protocol.CallEvent";
+  string                      id          = 1;
+  string                      call        = 2;
+  string                      to          = 3;
+  google.protobuf.StringValue type        = 4;
+  google.protobuf.Timestamp   ringTime    = 5;
+  google.protobuf.Timestamp   beginTime   = 6;
+  google.protobuf.Timestamp   endTime     = 7;
+  google.protobuf.StringValue status      = 8;
+  google.protobuf.StringValue eventStatus = 9;
+  google.protobuf.StringValue recordFile  = 10;
+  google.protobuf.StringValue fileServer  = 11;
+  google.protobuf.StringValue callId      = 12;
+  google.protobuf.Int64Value  callTime    = 13;
+}

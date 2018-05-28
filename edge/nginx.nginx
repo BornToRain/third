@@ -1,0 +1,58 @@
+#工作线程数
+worker_processes auto;
+#工作线程最大打开文件数
+worker_rlimit_nofile 1024;
+events
+{
+    #设置用于复用客户端线程的轮询方法
+    use epoll;
+    #设置可由一个worker进程同时打开的最大连接数
+    worker_connections 1024;
+}
+
+http
+{
+    include mime.types;
+    default_type application/octet-stream;
+
+    #日志格式定义
+    log_format main  '$remote_addr - $remote_user[$time_local] "$request" '
+    '$status $body_bytes_sent"$http_referer" '
+    '"$http_user_agent" "$http_x_forwarded_for"';
+    server_tokens off;
+    sendfile   on;
+    tcp_nopush on;
+    ssi               on;
+    ssi_silent_errors on;
+    ssi_types         text/shtml;
+    server_names_hash_bucket_size 256;
+
+    large_client_header_buffers 4 256k;
+    client_header_buffer_size 256k;
+    client_body_buffer_size   256k;
+    client_header_timeout     3m;
+    client_body_timeout       3m;
+    client_max_body_size      50m;
+    send_timeout 3m;
+    keepalive_timeout 120;
+
+    fastcgi_intercept_errors     on;
+    fastcgi_connect_timeout      300;
+    fastcgi_send_timeout         300;
+    fastcgi_read_timeout         300;
+    fastcgi_buffer_size          128k;
+    fastcgi_buffers 4            256k;
+    fastcgi_busy_buffers_size    256k;
+    fastcgi_temp_file_write_size 256k;
+
+    #gzip压缩功能设置
+    gzip              on;
+    gzip_min_length   1k;
+    gzip_buffers    4 16k;
+    gzip_http_version 1.0;
+    gzip_comp_level   2;
+    gzip_types        text/plain application/x-javascripttext/css application/xml;
+    gzip_vary         on;
+
+    include /usr/local/nginx/conf/conf.d/*.conf;
+}
