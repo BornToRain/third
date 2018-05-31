@@ -6,7 +6,8 @@ scalaVersion  in ThisBuild := "2.12.6"
 organization  in ThisBuild := "com.oasis.third"
 scalacOptions in ThisBuild := Seq(
   "-encoding", "UTF-8",
-  "-Ypartial-unification"
+  "-Ypartial-unification",
+  "-optimise"
 )
 
 /*******************框架*******************/
@@ -16,9 +17,9 @@ lazy val `core` = (project in file("core"))
   libraryDependencies ++= Seq(
     akka.actor, akka.slf4j,
     akka.http, akka.stream,
-    circe.parser, circe.genericExtras,
+    circe.parser, circe.genericExtras, circe.java8,
     akka.clusterShard, akka.clusterMetrics, akka.clusterTools,
-    other.jodaTime, other.redis % "provided", rxmongo.rxmongo % "provided"
+    other.groovy, other.redis % "provided", rxmongo.rxmongo % "provided"
   )
 )
 .dependsOn(`protocol`)
@@ -35,8 +36,10 @@ lazy val `protocol` = (project in file("protocol"))
 /*******************框架*******************/
 
 //金管家
-lazy val `pa`   = project in file("pa")
+lazy val `pa`     = project in file("pa")
 //打电话
-lazy val `call` = project in file("call")
+lazy val `call`   = project in file("call")
 //发短信
-lazy val `sms`  = project in file("sms")
+lazy val `sms`    = project in file("sms")
+//微信公众号
+lazy val `wechat` = project in file("wechat")

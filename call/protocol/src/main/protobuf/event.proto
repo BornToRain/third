@@ -8,18 +8,21 @@ package com.oasis.third.call.domain;
 
 message Bound
 {
-  option (scalapb.message).extends      = "com.oasis.third.call.protocol.CallEvent";
-  string                      id        = 1;
-  string                      call      = 2;
-  string                      to        = 3;
-  google.protobuf.StringValue noticeUri = 4;
-  google.protobuf.StringValue thirdId   = 5;
+  option (scalapb.message).extends       = "com.oasis.third.call.protocol.CallEvent";
+  string                      id         = 1;
+  string                      call       = 2;
+  string                      to         = 3;
+  google.protobuf.StringValue noticeUri  = 4;
+  google.protobuf.StringValue thirdId    = 5;
+  google.protobuf.Timestamp   createTime = 6;
 }
 
 message HungUp
 {
-  option (scalapb.message).extends = "com.oasis.third.call.protocol.CallEvent";
-  string                      id   = 1;
+  option (scalapb.message).extends     = "com.oasis.third.call.protocol.CallEvent";
+  string                      id       = 1;
+  google.protobuf.Timestamp updateTime = 6;
+
 }
 
 message Updated
@@ -38,4 +41,5 @@ message Updated
   google.protobuf.StringValue fileServer  = 11;
   google.protobuf.StringValue callId      = 12;
   google.protobuf.Int64Value  callTime    = 13;
+  google.protobuf.Timestamp   updateTime  = 14;
 }

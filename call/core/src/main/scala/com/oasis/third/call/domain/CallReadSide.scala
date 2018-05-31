@@ -4,6 +4,7 @@ import akka.actor.Props
 import akka.persistence.query.Offset
 import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.stream.scaladsl.Sink
+import cats.data.OptionT
 import com.oasis.third.call.domain.event.{Bound, Updated}
 import com.oasis.third.call.protocol.CallEvent
 import com.oasis.third.call.protocol.CallState.GetStateBy
@@ -12,6 +13,8 @@ import org.ryze.micro.protocol.tool.ProtobufTool
 import redis.RedisClient
 
 import scala.concurrent.duration._
+import cats.instances.future._
+import akka.pattern._
 
 class CallReadSide
 (
@@ -31,21 +34,9 @@ extends ActorL
     case e: Bound         =>
       //存储30分钟
       redis.set(s"$key_binding${e.call}", e.to, Some(30.minutes.toSeconds))
-      repository insert Call(_id = e.id, call = e.call, to = e.to, noticeUri = e.noticeUri, thirdId = e.thirdId)
-    case e: Updated       => repository update Call(
-      _id         = e.id,
-      callId      = e.callId,
-      call        = e.call,
-      to          = e.to,
-      `type`      = e.`type`,
-      ringTime    = e.ringTime map ProtobufTool.toDate,
-      beginTime   = e.beginTime map ProtobufTool.toDate,
-      endTime     = e.endTime map ProtobufTool.toDate,
-      status      = e.status,
-      eventStatus = e.eventStatus,
-      callTime    = e.callTime
-    )
-    case GetStateBy(call) => redis.get[String](s"$key_binding$call")
+      repository insert (Call create e)
+    case e: Updated       => OptionT(repository selectOne e.id) map (_ update e)
+    case GetStateBy(call) => redis.get[String](s"$key_binding$call") pipeTo sender
   }
 }
 

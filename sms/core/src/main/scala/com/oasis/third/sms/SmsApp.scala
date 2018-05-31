@@ -5,7 +5,7 @@ import akka.contrib.persistence.mongodb.MongoReadJournal
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.scaladsl.EventsByTagQuery
 import com.oasis.third.sms.application.service.SmsService
-import com.oasis.third.sms.domain.SmsAggregate
+import com.oasis.third.sms.domain.{SmsAggregate, SmsReadSide}
 import com.oasis.third.sms.infrastructure.SmsRepositoryImpl
 import com.oasis.third.sms.infrastructure.service.AlibabaClient
 import com.oasis.third.sms.interfaces.api.v1.SmsApi
@@ -14,6 +14,7 @@ import org.ryze.micro.core.actor.{ActorFactory, ActorL}
 import org.ryze.micro.core.mongodb.MongoDBClient
 import org.ryze.micro.core.tool.ConfigLoader
 
+import scala.annotation.switch
 import scala.language.postfixOps
 
 /**
@@ -35,10 +36,11 @@ class SmsApp(implicit factory: ActorFactory) extends ActorL
   private[this] val repository  = SmsRepositoryImpl(mongodb)
   private[this] val alibaba     = new AlibabaClient
   private[this] val domain      = context actorOf(SmsAggregate props, SmsAggregate.NAME)
+  private[this] val read        = context actorOf(SmsReadSide props(readJournal, repository), SmsReadSide.NAME)
   private[this] val service     = context actorOf(SmsService props (domain, alibaba), SmsService.NAME)
   private[this] val api         = context actorOf(SmsApi props service, SmsApi.NAME)
 
-  domain :: service :: api :: Nil foreach (context watch)
+  Seq(domain, read, service, api) foreach (context watch)
 
   override def receive =
   {

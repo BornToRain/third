@@ -25,14 +25,14 @@ class SmsApi(service: ActorRef)(implicit runtime: ActorRuntime) extends RestApi 
 
   override def route = logRequestResult(("sms", Logging.InfoLevel))
   {
-    pathPrefix("sms")
+    pathPrefix("v1" / "sms")
     {
       //创建短信
       (pathEnd & post & entity(as[Create]))
       {
         r => onSuccess((service ? r).mapTo[Result[String]])
         {
-          case Right(d) => complete(Created -> ("data" -> d))
+          case Right(d) => complete(Created -> Map("data" -> d))
           case Left(e)  => complete(BadRequest -> e)
         }
       } ~

@@ -1,13 +1,15 @@
 package com.oasis.third.call.infrastructure.service
 
+import akka.actor.Props
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest, RequestEntity, Uri}
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import com.oasis.third.call.infrastructure.service.MoorClient.HangUpRequest
+import akka.pattern._
+import com.oasis.third.call.infrastructure.service.MoorClient.request.HangUp
 import io.circe.JsonObject
-import org.ryze.micro.core.actor.ActorRuntime
+import org.ryze.micro.core.actor.{ActorL, ActorRuntime}
 import org.ryze.micro.core.http.JsonSupport
 import org.ryze.micro.core.tool.{Base64, ConfigLoader, DateTool, MD5}
 
@@ -16,7 +18,7 @@ import scala.concurrent.Future
 /**
   * 容联七陌客户端
   */
-case class MoorClient(implicit runtime: ActorRuntime) extends JsonSupport
+class MoorClient(implicit runtime: ActorRuntime) extends ActorL with JsonSupport
 {
   import runtime._
 
@@ -49,22 +51,32 @@ case class MoorClient(implicit runtime: ActorRuntime) extends JsonSupport
     .withQuery(Query("sig" -> b._2)), entity = a))
     d <- Unmarshal(c.entity).to[JsonObject]
   } yield d
-
-  /**
-    * 电话挂断
-    */
+  //挂断
   @inline
-  def hangUp(r: HangUpRequest) = post(s"v20160818/call/hangup/${MoorClient.account}")(Marshal(r).to[RequestEntity]) map (_.toString)
+  private[this] def hangUp(c: HangUp) = post(s"v20160818/call/hangup/${MoorClient.account}")(Marshal(c).to[RequestEntity]) map (_.toString)
+
+  override def receive =
+  {
+    //挂断
+    case c: HangUp => hangUp(c) pipeTo sender
+  }
 }
 
 object MoorClient extends ConfigLoader
 {
+  final val NAME = "moor-client"
+
   private[this] val moorConfig = loader.getConfig("7moor")
+
+  def props(implicit runtime: ActorRuntime) = Props(new MoorClient)
 
   lazy val account = moorConfig.getString("account")
   lazy val secret  = moorConfig.getString("secret")
   lazy val gateway = "http://apis.7moor.com/"
 
-  //挂断请求
-  case class HangUpRequest(CallId: Option[String], Agent: Option[String], ActionID: String)
+  object request
+  {
+    //挂断
+    case class HangUp(CallId: Option[String], Agent: Option[String], ActionID: String)
+  }
 }

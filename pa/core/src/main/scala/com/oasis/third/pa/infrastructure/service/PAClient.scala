@@ -1,23 +1,24 @@
 package com.oasis.third.pa.infrastructure.service
 
 import java.net.URLEncoder
-import java.util.Date
+import java.time.LocalDateTime
 
+import akka.actor.Props
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.pattern._
 import com.oasis.third.pa.infrastructure.service.PAClient.OrderDetail
+import com.oasis.third.pa.infrastructure.service.PAClient.Request.GetAccessToken
 import com.oasis.third.pa.protocol.PARequest.Pay
 import com.paic.palife.common.util.encry.la.LASecurityUtils
 import io.circe.JsonObject
 import io.circe.syntax._
-import org.ryze.micro.core.actor.ActorRuntime
+import org.ryze.micro.core.actor.{ActorL, ActorRuntime}
 import org.ryze.micro.core.http.JsonSupport
 import org.ryze.micro.core.tool.{ConfigLoader, DateTool}
-import org.slf4j.LoggerFactory
-import redis.RedisClient
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
@@ -26,15 +27,20 @@ import scala.concurrent.duration._
 /**
   * 平安金管家客户端
   */
-case class PAClient(redis: RedisClient)(implicit runtime: ActorRuntime) extends JsonSupport
+case class PAClient(implicit runtime: ActorRuntime) extends ActorL with JsonSupport
 {
   import runtime._
 
-  private[this] val log              = LoggerFactory.getLogger(classOf[PAClient])
-  //RedisKey
-  private[this] val key_access_token = "pa_access_token"
-  //RedisTimeToLive
-  private[this] val ttl              = Some(20.days.toSeconds)
+  var accessToken: String = _
+
+  /**
+    * 1秒延迟后开始定时
+    * 每19天刷新1次
+    */
+  context.system.scheduler.schedule(1.seconds, 19.days)
+  {
+    getAccessToken
+  }
 
   @inline
   private[this] def convert(response: HttpResponse) = Unmarshal(response.entity)
@@ -70,36 +76,25 @@ case class PAClient(redis: RedisClient)(implicit runtime: ActorRuntime) extends 
     case "3804" => "02"
     case _      => "暂不支持"
   }
-
-  /**
-    * 获取金管家令牌
-    * 1.先从Redis取
-    * 2.没有则网络请求
-    */
-  def getAccessToken = for
-  {
-    a <- redis.get[String](key_access_token)
-    b <- a map (Future(_)) getOrElse
-    {
-      get(PAClient.oauth2)("client_id" -> PAClient.clientId, "client_secret" -> PAClient.secret,
+  //网络请求获取金管家令牌
+  private[this] def getAccessToken = get(PAClient.oauth2)("client_id" -> PAClient.clientId, "client_secret" -> PAClient.secret,
         "grant_type" -> "client_credentials") map
-      {
-        d =>
-        val ac = d("data") map (_.hcursor.get[String]("access_token") getOrElse "") getOrElse ""
-        redis.set[String](key_access_token, ac, ttl)
-        ac
-      }
-    }
-  } yield b
-  /**
-    * 订单回传
-    */
-  def upload(r: Pay) =
+  {
+    d =>
+      val ac = d("data") map (_.hcursor.get[String]("access_token") getOrElse "") getOrElse ""
+      log info s"获取金管家AccessToken成功: $ac"
+      accessToken = ac
+  } recover
+  {
+    case e: Throwable => log error s"获取金管家AccessToken失败: ${e.getMessage}"
+  }
+  //订单回传
+  private[this] def upload(r: Pay) =
   {
     //当前时间
-    val now     = new Date
+    val now     = LocalDateTime.now
     //订单失效时间 15分钟
-    val expire  = new Date(now.getTime + 15.minutes.toMillis)
+    val expire  = now plusMinutes 15L
     //订单详情
     val details = r.details map (d => OrderDetail(d.name, d.count.toString, d.id, d.imageUri, commoditySubject = d.subject getOrElse "null",
       commodityPrice = d.amount.toString))
@@ -118,9 +113,9 @@ case class PAClient(redis: RedisClient)(implicit runtime: ActorRuntime) extends 
       //货币类型
       "currency"              -> "CNY",
       //下单时间yyyy-MM-dd HH:mm:ss
-      "orderPrepayTime"       -> DateTool.format(now)(),
+      "orderPrepayTime"       -> DateTool.format(now),
       //支付时间yyyy-MM-dd HH:mm:ss
-      "orderPayTime"          -> DateTool.format(now)(),
+      "orderPayTime"          -> DateTool.format(now),
       //不能填0、不能不传、不能填null,然而屁用没有。
       "couponAmount"          -> "1",
       "couponId"              -> null,
@@ -141,7 +136,7 @@ case class PAClient(redis: RedisClient)(implicit runtime: ActorRuntime) extends 
       //唯一标识
       "openId"                -> r.openId,
       //下单失效时间yyyy-MM-dd HH:mm:ss
-      "orderPrepayExpireTime" -> DateTool.format(expire)(),
+      "orderPrepayExpireTime" -> DateTool.format(expire),
       //产品编码
       "productCode"           -> "VLRT",
       "agentNo"               -> null,
@@ -150,17 +145,25 @@ case class PAClient(redis: RedisClient)(implicit runtime: ActorRuntime) extends 
     )
     val request = params + ("securitySign" -> sign(params))
 
-    for
-    {
-      a <- getAccessToken
-      b <- post(s"/order/postBack/access_token=$a")(request)
-    } yield b
+    post(s"/order/postBack/access_token=$accessToken")(request)
+  }
+
+  override def receive =
+  {
+    //获取金管家AccessToken
+    case GetAccessToken => sender ! accessToken
+    //订单回传
+    case r: Pay         => upload(r) pipeTo sender
   }
 }
 
 object PAClient extends ConfigLoader
 {
+  final val NAME = "pa-client"
+
   private[this] val paConfig = loader.getConfig("pa")
+
+  def props(implicit runtime: ActorRuntime) = Props(new PAClient)
 
   //平安公钥
   lazy val publicKey    = paConfig.getString("public-key")
@@ -176,6 +179,11 @@ object PAClient extends ConfigLoader
   lazy val oauth2       = paConfig.getString("oauth2")
   lazy val clientId     = paConfig.getString("client-id")
   lazy val secret       = paConfig.getString("secret")
+
+  object Request
+  {
+    case object GetAccessToken
+  }
 
   //商品
   case class OrderDetail

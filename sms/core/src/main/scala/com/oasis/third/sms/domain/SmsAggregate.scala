@@ -5,14 +5,13 @@ import com.oasis.third.sms.domain.event.Created
 import com.oasis.third.sms.protocol.{SmsCommand, SmsEvent}
 import com.oasis.third.sms.protocol.SmsCommand.Create
 import org.ryze.micro.core.domain.AggregateRoot
-import org.ryze.micro.protocol.tool.ProtobufTool
 
-class SmsAggregate extends AggregateRoot[Option[Sms], SmsCommand, SmsEvent]
+class SmsAggregate extends AggregateRoot[Domain, SmsCommand, SmsEvent]
 {
-  override var state: Option[Sms] = _
+  override var state: Domain = _
   override def updateState(event: SmsEvent): Unit = event match
   {
-    case e: Created => state = Some(Sms(e.id, e.mobile, e.`type`, e.captcha, e.messageId, (e.createTime map ProtobufTool.toDate).get))
+    case e: Created => state = Some(Sms create e)
   }
   override def receiveCommand =
   {

@@ -25,12 +25,12 @@ object SmsType
   //支付
   case object Payment extends SmsType
   {
-    override val name = "name"
+    override val name = "payment"
   }
   //达人通知
   case object Notice extends SmsType
   {
-    override val name = "name"
+    override val name = "notice"
   }
 
   lazy val seq = Seq(Register, Login, Invitation, Payment, Notice)

@@ -10,6 +10,7 @@ lazy val `sms-protocol` = (project in file("protocol"))
 )
 .dependsOn(LocalProject("protocol"))
 
+//发短信核心实现
 lazy val `sms-core` = (project in file("core"))
 .settings(
   name                 := "sms-core",

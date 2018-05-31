@@ -8,6 +8,6 @@ class CallEventAdapter extends WriteEventAdapter
   override def manifest(event: Any) = ""
   override def toJournal(event: Any) = event match
   {
-    case event: CallEvent => Tagged(event, Set(CallEvent.TAG))
+    case e: CallEvent => Tagged(e, Set(CallEvent.TAG))
   }
 }

@@ -2,9 +2,11 @@ package com.oasis.third.sms.domain
 
 import java.util.Date
 
+import com.oasis.third.sms.domain.event.Created
 import com.oasis.third.sms.protocol.SmsRequest.{Create, Validate}
 import org.ryze.micro.core.domain.DomainError
 import org.ryze.micro.core.tool.Regex
+import org.ryze.micro.protocol.tool.ProtobufTool
 
 case class Sms
 (
@@ -17,7 +19,7 @@ case class Sms
   captcha   : Option[String] = None,
   //阿里消息ID
   messageId : String,
-  createTime: Date = new Date
+  createTime: Date
 )
 
 object Sms
@@ -55,4 +57,8 @@ object Sms
     _ <- validateType(r.`type`)
     _ <- validateCaptcha(Some(r.captcha))
   } yield r
+  /**
+    * 创建
+    */
+  def create(e: Created) = Sms(e.id, e.mobile, e.`type`, e.captcha, e.messageId, (e.createTime map ProtobufTool.toDate).get)
 }

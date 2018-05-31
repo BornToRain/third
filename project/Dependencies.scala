@@ -18,6 +18,7 @@ object Dependencies
     lazy val stream             = apply("stream")
     //http
     lazy val http               = apply("http", Version.http)
+    lazy val httpXML            = apply("http-xml", Version.http)
     //集群
     lazy val cluster            = apply("cluster")
     lazy val clusterShard       = apply("cluster-sharding")
@@ -36,6 +37,7 @@ object Dependencies
   {
     lazy val parser        = apply("parser")
     lazy val genericExtras = apply("generic-extras")
+    lazy val java8         = apply("java8")
 
     @inline
     private[this] def apply(name: String) = "io.circe" %% s"circe-$name" % Version.circe
@@ -62,11 +64,13 @@ object Dependencies
   object other
   {
     //日志
-    lazy val logback      = "ch.qos.logback"       %  "logback-classic"    % "1.2.3"
+    lazy val logback  = "ch.qos.logback"           %  "logback-classic"    % "1.2.3"
+    lazy val groovy   = "org.codehaus.groovy"      %  "groovy-all"         % "2.4.15"
     //Protobuf序列化
-    lazy val protobuf     = "com.thesamet.scalapb" %% "scalapb-runtime"    % scalapb.compiler.Version.scalapbVersion % "protobuf"
+    lazy val protobuf = "com.thesamet.scalapb"     %% "scalapb-runtime"    % scalapb.compiler.Version.scalapbVersion % "protobuf"
     //Redis
-    lazy val redis        = "com.github.etaty"     %% "rediscala"          % "1.8.0"
-    lazy val jodaTime     = "joda-time"            %  "joda-time"          % "2.9.9"
+    lazy val redis    = "com.github.etaty"         %% "rediscala"          % "1.8.0"
+    //xstream
+    lazy val xstream  = "com.thoughtworks.xstream" %  "xstream"            % "1.4.10"
   }
 }

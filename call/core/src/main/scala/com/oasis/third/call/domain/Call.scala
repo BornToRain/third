@@ -2,9 +2,11 @@ package com.oasis.third.call.domain
 
 import java.util.Date
 
+import com.oasis.third.call.domain.event.{Bound, HungUp, Updated}
 import com.oasis.third.call.protocol.CallRequest.Bind
 import org.ryze.micro.core.domain.DomainError
 import org.ryze.micro.core.tool.Regex
+import org.ryze.micro.protocol.tool.ProtobufTool
 
 import scala.language.postfixOps
 
@@ -18,7 +20,7 @@ case class Call
   //被呼叫方
   to         : String,
   //通话类型
-  `type`     : Option[String] = None,
+  `type`     : Option[String] =  None,
   //通话振铃时间
   ringTime   : Option[Date]   = None,
   //接通时间
@@ -34,8 +36,29 @@ case class Call
   //回调通知地址
   noticeUri  : Option[String] = None,
   //通话时长
-  callTime   : Option[Long]   = None
+  callTime   : Option[Long]   = None,
+  createTime : Date,
+  updateTime : Option[Date]   = None
 )
+{
+  //挂断
+  @inline
+  def hangUp(e: HungUp) = copy(updateTime = e.updateTime map ProtobufTool.toDate)
+  //更新
+  @inline
+  def update(e: Updated) = copy(
+    callId      = e.callId,
+    call        = e.call,
+    to          = e.to,
+    `type`      = e.`type`,
+    ringTime    = e.ringTime map ProtobufTool.toDate,
+    beginTime   = e.beginTime map ProtobufTool.toDate,
+    endTime     = e.endTime map ProtobufTool.toDate,
+    status      = e.status,
+    eventStatus = e.eventStatus,
+    updateTime  = e.updateTime map ProtobufTool.toDate
+  )
+}
 
 object Call
 {
@@ -66,4 +89,15 @@ object Call
     _ <- validateNoticeUri(r.noticeUri)
     _ <- validateThirdId(r.thirdId)
   } yield r
+  /**
+    * 创建
+    */
+  def create(e: Bound) = Call(
+    _id        = e.id,
+    call       = e.call,
+    to         = e.to,
+    noticeUri  = e.noticeUri,
+    thirdId    = e.thirdId,
+    createTime = (e.createTime map ProtobufTool.toDate).get
+  )
 }

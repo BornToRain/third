@@ -2,7 +2,6 @@ import Dependencies._
 import sbt.Keys.mainClass
 import sbtassembly.AssemblyPlugin.autoImport.assemblyJarName
 
-
 //平安金管家协议(请求|命令|事件)
 lazy val `pa-protocol` = (project in file ("protocol"))
 .settings(
@@ -19,7 +18,7 @@ lazy val `pa-core` = (project in file ("core"))
   name                        := "pa-core",
   libraryDependencies        ++= Seq(
     fp.catsCore,
-    other.logback, other.redis,
+    other.logback,
     //金管家用
     "commons-codec" % "commons-codec" % "1.11",
     "commons-lang"  % "commons-lang"  % "2.6"

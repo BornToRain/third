@@ -5,10 +5,9 @@ import com.oasis.third.pa.infrastructure.service.{OasisClient, PAClient}
 import com.oasis.third.pa.interfaces.api.v1.PAApi
 import com.typesafe.config.ConfigFactory
 import org.ryze.micro.core.actor.{ActorFactory, ActorL}
-import org.ryze.micro.core.redis.RdsClient
 import org.ryze.micro.core.tool.ConfigLoader
 
-import scala.annotation.switch
+import scala.language.postfixOps
 
 object PAAppStartUp extends App with ConfigLoader
 {
@@ -18,7 +17,7 @@ object PAAppStartUp extends App with ConfigLoader
 
   implicit val factory = ActorFactory(config)
 
-  factory.system actorOf(PAApp.props, PAApp.NAME)
+  factory.system actorOf (PAApp.props, PAApp.NAME)
 }
 
 /**
@@ -28,12 +27,11 @@ class PAApp(implicit factory: ActorFactory) extends ActorL
 {
   import factory.runtime
 
-  private[this] val redis  = RdsClient(factory.config).rds
-  private[this] val client = PAClient(redis)
-  private[this] val oasis  = OasisClient()
+  private[this] val client = factory.cluster.createSingleton(PAClient.props)(PAClient.NAME)(APP)
+  private[this] val oasis  = context actorOf (OasisClient.props, OasisClient.NAME)
   private[this] val api    = context actorOf (PAApi.props(client, oasis),PAApi.NAME)
 
-  context watch api
+  Seq(client, oasis, api) foreach (context watch)
 
   override def receive =
   {

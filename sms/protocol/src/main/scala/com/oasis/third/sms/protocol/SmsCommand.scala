@@ -1,6 +1,6 @@
 package com.oasis.third.sms.protocol
 
-import java.util.Date
+import java.time.LocalDateTime
 
 import com.oasis.third.sms.domain.event.Created
 import org.ryze.micro.protocol.domain.DomainCommand
@@ -18,7 +18,7 @@ sealed trait SmsCommand extends DomainCommand
 object SmsCommand
 {
   case class Create(id: String, mobile: String, `type`: String, captcha: Option[String], messageId: String,
-    createTime: Date = new Date) extends SmsCommand
+    createTime: LocalDateTime = LocalDateTime.now) extends SmsCommand
   {
     override val event = Created(id, mobile, `type`, captcha, messageId, Some(ProtobufTool toTimestamp createTime))
   }

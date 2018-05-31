@@ -7,11 +7,12 @@ import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
 import akka.util.ByteString
 import io.circe._
 import io.circe.generic.extras.{AutoDerivation, Configuration}
+import io.circe.java8.time.TimeInstances
 
 /**
   * Json自动Encode、Decode支持
   */
-trait JsonSupport extends CirceSupport with AutoDerivation
+trait JsonSupport extends CirceSupport with AutoDerivation with TimeInstances
 {
   override implicit val printer       = Printer.noSpaces copy (dropNullValues = true)
   override implicit val configuration = Configuration.default.withDefaults.withDiscriminator("type")

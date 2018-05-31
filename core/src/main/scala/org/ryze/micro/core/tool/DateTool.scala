@@ -1,9 +1,10 @@
 package org.ryze.micro.core.tool
 
+import java.time.{LocalDateTime, ZoneId}
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.{Date, Locale}
 
-import org.joda.time.{DateTime, DateTimeZone, Duration}
-import org.joda.time.format.DateTimeFormat
 
 object DateTool
 {
@@ -19,33 +20,34 @@ object DateTool
     * yyyyMMddHHmmss格式时间戳
     */
   @inline
-  def datetimeStamp = DateTime.now.toString(TIMESTAMP)
+  def datetimeStamp = LocalDateTime.now.format(DateTimeFormatter.ofPattern(TIMESTAMP))
   /**
     * 解析日期字符串
     */
   @inline
-  def parse(s: String)(pattern: String = FULLDATE) = DateTime.parse(s, DateTimeFormat.forPattern(pattern)
-  .withLocale(Locale.US).withZone(DateTimeZone.getDefault)).toDate
+  def parse(s: String, pattern: String = FULLDATE) =
+    LocalDateTime parse(s, DateTimeFormatter ofPattern(pattern, Locale.US) withZone ZoneId.systemDefault)
   /**
     * 日期格式化
     */
   @inline
-  def format(date: Date)(pattern: String = FULLDATE) = DateTimeFormat.forPattern(pattern).withLocale(Locale.US)
-  .withZone(DateTimeZone.getDefault).print(date.getTime)
+  def format(dateTime: LocalDateTime, pattern: String = FULLDATE) =
+    dateTime format (DateTimeFormatter ofPattern(pattern, Locale.US) withZone ZoneId.systemDefault)
+  @inline
+  def formatDate(date: Date, pattern: String = FULLDATE) = format(toLocalDateTime(date), pattern)
+  @inline
+  def toDate(dateTime: LocalDateTime) = Date from (dateTime atZone ZoneId.systemDefault).toInstant
+  @inline
+  def toLocalDateTime(date: Date) = (date.toInstant atZone ZoneId.systemDefault).toLocalDateTime
   /**
     * x与y的时间差
     * x<y?正数:复数 默认单位分钟
     */
-  def compare(x: Date)(y: Date)(`type`: String = MINUTES) =
+  def compare(x: LocalDateTime)(y: LocalDateTime)(`type`: String = MINUTES) = `type` match
   {
-    val d = new Duration(new DateTime(x), new DateTime(y))
-    `type` match
-    {
-      case SECONDS => d.getStandardSeconds
-      case MINUTES => d.getStandardMinutes
-      case HOURS   => d.getStandardHours
-      case DAYS    => d.getStandardDays
-      case _       => d.getMillis
-    }
+    case SECONDS => ChronoUnit.SECONDS between (x, y)
+    case MINUTES => ChronoUnit.MINUTES between (x, y)
+    case HOURS   => ChronoUnit.HOURS between (x, y)
+    case DAYS    => ChronoUnit.DAYS between (x, y)
   }
 }

@@ -8,6 +8,7 @@ import akka.pattern._
 import com.oasis.third.call.Result
 import com.oasis.third.call.protocol.CallCommand.{HangUp, Update}
 import com.oasis.third.call.protocol.CallRequest.Bind
+import com.oasis.third.call.protocol.CallState.GetStateBy
 import org.ryze.micro.core.actor.{ActorL, ActorRuntime}
 import org.ryze.micro.core.http.RestApi
 import org.ryze.micro.core.tool.{ConfigLoader, DateTool}
@@ -40,9 +41,9 @@ class CallApi(service: ActorRef)(implicit runtime: ActorRuntime) extends RestApi
     call        = map("CallNo"),
     to          = map("CalledNo"),
     `type`      = map.get("CallType"),
-    ringTime    = map.get("Ring") map (DateTool.parse(_)()),
-    beginTime   = map.get("Begin") map (DateTool.parse(_)()),
-    endTime     = map.get("End") map (DateTool.parse(_)()),
+    ringTime    = map.get("Ring") map (DateTool.parse(_)),
+    beginTime   = map.get("Begin") map (DateTool.parse(_)),
+    endTime     = map.get("End") map (DateTool.parse(_)),
     status      = map.get("State"),
     eventStatus = map.get("CallState"),
     recordFile  = map.get("RecordFile"),
@@ -61,14 +62,14 @@ class CallApi(service: ActorRef)(implicit runtime: ActorRuntime) extends RestApi
         {
           r => onSuccess((service ? r).mapTo[Result[String]])
           {
-            case Right(d) => complete(Created -> ("data" -> d))
+            case Right(d) => complete(Created -> Map("data" -> d))
             case Left(e)  => complete(BadRequest -> e)
           }
         } ~
         //容联七陌电话回调
         (get & parameter('mobile))
         {
-          r => onSuccess((service ? r).mapTo[Option[String]])
+          r => onSuccess((service ? GetStateBy(r)).mapTo[Option[String]])
           {
             case Some(d) => complete(d)
             //容联七陌那边需要返回http 200OK 然后内容字符串404来判断没有手机号,脱裤子放屁.
@@ -96,8 +97,8 @@ class CallApi(service: ActorRef)(implicit runtime: ActorRuntime) extends RestApi
             log.info("+---------------------------------------------------------------------------------------------------------------------------+")
             map foreach { case (k, v) => log.info(s"$k: $v") }
             log.info("+---------------------------------------------------------------------------------------------------------------------------+")
-            val r = formMap(map)
-            service ! r
+            val cmd = formMap(map)
+            service ! cmd
             OK
           }
         }

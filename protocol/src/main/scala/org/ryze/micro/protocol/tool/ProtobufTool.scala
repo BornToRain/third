@@ -1,9 +1,9 @@
 package org.ryze.micro.protocol.tool
 
+import java.time.{LocalDateTime, ZoneId}
 import java.util.Date
 
 import com.google.protobuf.timestamp.Timestamp
-
 
 object ProtobufTool
 {
@@ -12,5 +12,5 @@ object ProtobufTool
   @inline
   def toDate(timestamp: Timestamp) = new Date(timestamp.seconds * mills_unit)
   @inline
-  def toTimestamp(date: Date) = Timestamp(date.getTime / mills_unit)
+  def toTimestamp(dateTime: LocalDateTime) = Timestamp((dateTime atZone ZoneId.systemDefault).toInstant.getEpochSecond)
 }

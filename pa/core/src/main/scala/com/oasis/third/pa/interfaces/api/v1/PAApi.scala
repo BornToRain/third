@@ -1,10 +1,11 @@
 package com.oasis.third.pa.interfaces.api.v1
 
-import akka.actor.{Actor, Props}
+import akka.actor.{Actor, ActorRef, Props}
 import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes.{BadRequest, Created}
-import com.oasis.third.pa.infrastructure.service.{OasisClient, PAClient}
+import com.oasis.third.pa.infrastructure.service.PAClient
+import com.oasis.third.pa.infrastructure.service.OasisClient.{request, response}
 import com.oasis.third.pa.protocol.PAValueObject
 import com.oasis.third.pa.protocol.PARequest.Pay
 import com.paic.palife.common.util.encry.la.LASecurityUtils
@@ -15,11 +16,12 @@ import org.ryze.micro.core.http.RestApi
 import org.ryze.micro.core.tool.ConfigLoader
 
 import scala.util.{Failure, Success}
+import akka.pattern._
 
 /**
   * 平安金管家接口
   */
-class PAApi(client: PAClient, oasis: OasisClient)(implicit runtime: ActorRuntime) extends ActorL with RestApi
+class PAApi(client: ActorRef, oasis: ActorRef)(implicit runtime: ActorRuntime) extends ActorL with RestApi
 {
   import runtime._
 
@@ -44,7 +46,7 @@ class PAApi(client: PAClient, oasis: OasisClient)(implicit runtime: ActorRuntime
           log.info(s"data: $data")
           complete(data.hcursor.downField("user").as[PAValueObject.User] match
           {
-            case Right(d) => oasis.registerBy(d.openId)
+            case Right(d) => (oasis ? request.Register(d.openId)).mapTo[response.Register]
             case _        => BadRequest -> """{"code": 0, "msg": "登录失败!"}"""
           })
         }
@@ -54,14 +56,9 @@ class PAApi(client: PAClient, oasis: OasisClient)(implicit runtime: ActorRuntime
         //订单回传
         (post & entity(as[Pay]))
         {
-          r => complete
-          {
-            client upload r map
-            {
-              d => log.info(s"返回值: $d")
-              Created
-            }
-          }
+          r =>
+            client ! r
+            complete(Created)
         }
       }
     }
@@ -74,7 +71,7 @@ object PAApi extends ConfigLoader
 
   private[this] val httpConfig = loader.getConfig("http")
 
-  def props(client: PAClient, oasis: OasisClient)(implicit runtime: ActorRuntime) = Props(new PAApi(client, oasis))
+  def props(client: ActorRef, oasis: ActorRef)(implicit runtime: ActorRuntime) = Props(new PAApi(client, oasis))
 
   lazy val host = httpConfig.getString("host")
   lazy val port = httpConfig.getInt("port")

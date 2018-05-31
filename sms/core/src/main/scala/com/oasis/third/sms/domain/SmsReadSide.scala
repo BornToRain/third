@@ -7,7 +7,6 @@ import akka.stream.scaladsl.Sink
 import com.oasis.third.sms.domain.event.Created
 import com.oasis.third.sms.protocol.SmsEvent
 import org.ryze.micro.core.actor.{ActorL, ActorRuntime}
-import org.ryze.micro.protocol.tool.ProtobufTool
 
 class SmsReadSide
 (
@@ -22,7 +21,7 @@ class SmsReadSide
 
   override def receive =
   {
-    case e: Created => repository insert Sms(e.id, e.mobile, e.`type`, e.captcha, e.messageId, (e.createTime map ProtobufTool.toDate).get)
+    case e: Created => repository insert (Sms create e)
   }
 }
 
