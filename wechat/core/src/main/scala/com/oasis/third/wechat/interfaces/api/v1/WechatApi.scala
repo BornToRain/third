@@ -5,6 +5,7 @@ import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
 import akka.pattern._
+import com.oasis.third.wechat.infrastructure.service.PaymentClient.request.Payment
 import com.oasis.third.wechat.infrastructure.service.WechatClient.request._
 import com.oasis.third.wechat.infrastructure.service.WechatClient.response.JsSDK
 import com.oasis.third.wechat.infrastructure.tool.XMLTool
@@ -17,18 +18,23 @@ import org.ryze.micro.core.tool.{ConfigLoader, DateTool}
 import scala.util.{Failure, Random, Success}
 import scala.xml.XML
 
-class WechatApi(client: ActorRef)(implicit runtime: ActorRuntime) extends RestApi with ActorL
+class WechatApi
+(
+  client : ActorRef,
+  payment: ActorRef
+)(implicit runtime: ActorRuntime) extends RestApi with ActorL
 {
   import runtime._
 
-  Http(runtime.as).bindAndHandle(route, WechatApi.host, WechatApi.port) onComplete
+  Http(runtime.as) bindAndHandle(route, WechatApi.host, WechatApi.port) onComplete
   {
-    case Success(d) => log.info(s"微信模块启动成功: ${d.localAddress}")
-    case Failure(e) => log.error(s"微信模块启动失败: ${e.getMessage}")
+    case Success(d) => log info s"微信模块启动成功: ${d.localAddress}"
+    case Failure(e) => log error s"微信模块启动失败: ${e.getMessage}"
   }
 
   //产生指定位数随机数
-  def createRandom(i: Int) = Random.alphanumeric.take(i).mkString
+  @inline
+  private[this] def createRandom(i: Int) = Random.alphanumeric.take(i).mkString
 
   override def route = logRequestResult(("wechat", Logging.InfoLevel))
   {
@@ -72,11 +78,30 @@ class WechatApi(client: ActorRef)(implicit runtime: ActorRuntime) extends RestAp
         }
       } ~
       //获取js-sdk
-      (path("js-sdk") & parameter('uri))
+      path("js")
+      {
+        (get & parameter('uri))
+        {
+          r => complete
+          {
+            (client ? GetJsSign(DateTool.datetimeStamp, createRandom(32), r)).mapTo[JsSDK]
+          }
+        } ~
+        //公众号支付
+        (post & entity(as[Payment]))
+        {
+          r => complete
+          {
+            (payment ? r).mapTo[String]
+          }
+        }
+      } ~
+      //小程序支付
+      (path("applet") & post & entity(as[Payment]))
       {
         r => complete
         {
-          (client ? GetJsSign(DateTool.datetimeStamp, createRandom(32), r)).mapTo[JsSDK]
+          (payment ? r).mapTo[String]
         }
       }
     }
@@ -86,11 +111,12 @@ class WechatApi(client: ActorRef)(implicit runtime: ActorRuntime) extends RestAp
 
 object WechatApi extends ConfigLoader
 {
+  final val NAME = "wechat-api"
+  @inline
+  final def props(client: ActorRef, payment: ActorRef)(implicit runtime: ActorRuntime) = Props(new WechatApi(client, payment))
+
   private[this] val httpConfig = loader getConfig "http"
 
-  final val NAME = "wechat-api"
-
-  def props(client: ActorRef)(implicit runtime: ActorRuntime) = Props(new WechatApi(client))
 
   lazy val host = httpConfig getString "host"
   lazy val port = httpConfig getInt    "port"

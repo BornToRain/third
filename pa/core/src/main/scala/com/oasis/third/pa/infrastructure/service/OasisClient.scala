@@ -20,19 +20,17 @@ case class OasisClient(implicit runtime: ActorRuntime) extends ActorL with JsonS
 {
   import runtime._
 
-  private[this] def post(uri: String)(entity: Future[RequestEntity]) = for
+  @inline
+  private[this] def post(uri: String, entity: Future[RequestEntity]) = for
   {
-    a <-
-    {
-      println(s"gateway: ${OasisClient.gateway}$uri")
-      entity
-    }
-    b <- Http().singleRequest(HttpRequest(HttpMethods.POST, Uri(s"${OasisClient.gateway}$uri"), entity = a))
+    a <- entity
+    b <- Http() singleRequest HttpRequest(HttpMethods.POST, Uri(s"${OasisClient.gateway}$uri"), entity = a)
   } yield b
   //openId注册泓华账号
+  @inline
   private[this] def registerBy(openId: String) = for
   {
-    a <- post("/userAccount/third/register")(Marshal(Map("openId" -> openId)).to[RequestEntity])
+    a <- post("/userAccount/third/register", Marshal(Map("openId" -> openId)).to[RequestEntity])
     b <- Unmarshal(a).to[response.Register]
   } yield b
 
@@ -46,12 +44,13 @@ object OasisClient extends ConfigLoader
 {
   final val NAME = "oasis-client"
 
-  private[this] val oasisConfig = loader.getConfig("oasis")
+  private[this] val oasisConfig = loader getConfig "oasis"
 
-  def props(implicit runtime: ActorRuntime) = Props(new OasisClient)
+  @inline
+  final def props(implicit runtime: ActorRuntime) = Props(new OasisClient)
 
   //泓华网关地址
-  lazy val gateway = oasisConfig.getString("gateway")
+  lazy val gateway = oasisConfig getString "gateway"
 
   object request
   {

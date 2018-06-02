@@ -16,8 +16,8 @@ lazy val `call-core` = (project in file("core"))
 .settings(
   name                        := "call-core",
   libraryDependencies        ++= Seq(
-    other.logback, other.redis,
-    akka.persistence, akka.persistenceQuery, akka.persistenceRxMongo,
+    other.redis,
+    akka.persistenceQuery, akka.persistenceRxMongo,
     rxmongo.rxmongo, rxmongo.rxmongoStream
   ),
   mainClass       in assembly := Some("com.oasis.third.call.CallAppStartUp"),

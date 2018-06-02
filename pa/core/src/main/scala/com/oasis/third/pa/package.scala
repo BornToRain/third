@@ -1,6 +1,8 @@
 package com.oasis.third
 
+import org.ryze.micro.core.domain.DomainName
+
 package object pa
 {
-  final val APP = "pa"
+  implicit final val APP = DomainName("pa")
 }

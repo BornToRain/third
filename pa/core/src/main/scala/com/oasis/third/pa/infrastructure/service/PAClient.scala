@@ -11,7 +11,7 @@ import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.pattern._
 import com.oasis.third.pa.infrastructure.service.PAClient.OrderDetail
-import com.oasis.third.pa.infrastructure.service.PAClient.Request.GetAccessToken
+import com.oasis.third.pa.infrastructure.service.PAClient.request.GetAccessToken
 import com.oasis.third.pa.protocol.PARequest.Pay
 import com.paic.palife.common.util.encry.la.LASecurityUtils
 import io.circe.JsonObject
@@ -47,27 +47,32 @@ case class PAClient(implicit runtime: ActorRuntime) extends ActorL with JsonSupp
   //生成签名
   @inline
   private[this] def sign(map: Map[String, String]) =
-    URLEncoder.encode(LASecurityUtils.createSignatureForParameters(PAClient.privateKey, map.asJava), HttpCharsets.`UTF-8`.value)
-  private[this] def get(uri: String)(qs: (String, String)*) = for
+    URLEncoder encode (LASecurityUtils createSignatureForParameters (PAClient.privateKey, map.asJava), HttpCharsets.`UTF-8`.value)
+  @inline
+  private[this] def get(uri: String, qs: (String, String)*) = for
   {
-    a <- Http().singleRequest(HttpRequest(uri = Uri(uri).withQuery(Query(qs: _*))))
+    a <- Http() singleRequest HttpRequest(uri = Uri(uri) withQuery Query(qs: _*))
     b <- convert(a).to[JsonObject]
   } yield b
-  private[this] def post(uri: String)(entity: Map[String, String]) = for
+  @inline
+  private[this] def post(uri: String, entity: Map[String, String]) = for
   {
     a <- Future
     {
-      val e= HttpEntity(ContentType.apply(MediaTypes.`application/x-www-form-urlencoded`, HttpCharsets.`UTF-8`),
+      val e = HttpEntity(
+        contentType = ContentType.apply(MediaTypes.`application/x-www-form-urlencoded`, HttpCharsets.`UTF-8`),
         //一定要记得最后那个&不要去掉，平安那狗第三方就这么要求的。
-        entity.toList.sorted map (t => s"${t._1}=${t._2}&") reduce (_+_))
-      log.info(s"$e")
+        string      = entity.toList.sorted map (t => s"${t._1}=${t._2}&") reduce (_+_)
+      )
+      log info s"$e"
       e
     }
-    b <- Http().singleRequest(HttpRequest(HttpMethods.POST, Uri(s"${PAClient.gateway}$uri"), entity = a)
-    .withHeaders(RawHeader("Accept", "application/json")))
+    b <- Http() singleRequest (HttpRequest(HttpMethods.POST, Uri(s"${PAClient.gateway}$uri"), entity = a) withHeaders RawHeader("Accept",
+      "application/json"))
     c <- convert(b).to[JsonObject] map (_("data"))
   } yield c
   //转换支付类型
+  @inline
   private[this] def convert(payType: String) = payType match
   {
     //微信
@@ -77,7 +82,7 @@ case class PAClient(implicit runtime: ActorRuntime) extends ActorL with JsonSupp
     case _      => "暂不支持"
   }
   //网络请求获取金管家令牌
-  private[this] def getAccessToken = get(PAClient.oauth2)("client_id" -> PAClient.clientId, "client_secret" -> PAClient.secret,
+  private[this] def getAccessToken = get(PAClient.oauth2, "client_id" -> PAClient.clientId, "client_secret" -> PAClient.secret,
         "grant_type" -> "client_credentials") map
   {
     d =>
@@ -145,7 +150,7 @@ case class PAClient(implicit runtime: ActorRuntime) extends ActorL with JsonSupp
     )
     val request = params + ("securitySign" -> sign(params))
 
-    post(s"/order/postBack/access_token=$accessToken")(request)
+    post(s"/order/postBack/access_token=$accessToken", request)
   }
 
   override def receive =
@@ -161,26 +166,27 @@ object PAClient extends ConfigLoader
 {
   final val NAME = "pa-client"
 
-  private[this] val paConfig = loader.getConfig("pa")
+  private[this] val paConfig = loader getConfig "pa"
 
+  @inline
   def props(implicit runtime: ActorRuntime) = Props(new PAClient)
 
   //平安公钥
-  lazy val publicKey    = paConfig.getString("public-key")
+  lazy val publicKey    = paConfig getString "public-key"
   //私钥
-  lazy val privateKey   = paConfig.getString("private-key")
+  lazy val privateKey   = paConfig getString "private-key"
   //商户号
-  lazy val merchantCode = paConfig.getString("merchant-code")
+  lazy val merchantCode = paConfig getString "merchant-code"
   //商户号ID
-  lazy val merchantId   = paConfig.getString("merchant-id")
+  lazy val merchantId   = paConfig getString "merchant-id"
   //平安网关地址
-  lazy val gateway      = paConfig.getString("gateway")
+  lazy val gateway      = paConfig getString "gateway"
   //平安OAuth2地址
-  lazy val oauth2       = paConfig.getString("oauth2")
-  lazy val clientId     = paConfig.getString("client-id")
-  lazy val secret       = paConfig.getString("secret")
+  lazy val oauth2       = paConfig getString "oauth2"
+  lazy val clientId     = paConfig getString "client-id"
+  lazy val secret       = paConfig getString "secret"
 
-  object Request
+  object request
   {
     case object GetAccessToken
   }

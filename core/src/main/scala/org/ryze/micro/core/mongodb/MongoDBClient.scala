@@ -5,6 +5,7 @@ import org.ryze.micro.core.actor.ActorRuntime
 import reactivemongo.api.MongoDriver
 
 import scala.collection.JavaConverters._
+import scala.language.postfixOps
 
 /**
   * MongoDB客户端
@@ -13,9 +14,9 @@ case class MongoDBClient(config: Config)(implicit runtime: ActorRuntime)
 {
   import runtime._
 
-  private[this] val mongodbConfig = config.getConfig("mongodb")
+  private[this] val mongodbConfig = config getConfig "mongodb"
 
   lazy val driver     = new MongoDriver
-  lazy val connection = driver.connection(mongodbConfig.getStringList("servers").asScala)
-  lazy val db         = connection(mongodbConfig.getString("database"))
+  lazy val connection = driver connection ((mongodbConfig getStringList "servers") asScala)
+  lazy val db         = connection database (mongodbConfig getString "database")
 }

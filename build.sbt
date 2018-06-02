@@ -7,7 +7,10 @@ organization  in ThisBuild := "com.oasis.third"
 scalacOptions in ThisBuild := Seq(
   "-encoding", "UTF-8",
   "-Ypartial-unification",
-  "-optimise"
+  "-opt-warnings",
+  "-deprecation",
+  "-opt:l:inline",
+  "-feature"
 )
 
 /*******************框架*******************/
@@ -17,9 +20,9 @@ lazy val `core` = (project in file("core"))
   libraryDependencies ++= Seq(
     akka.actor, akka.slf4j,
     akka.http, akka.stream,
-    circe.parser, circe.genericExtras, circe.java8,
     akka.clusterShard, akka.clusterMetrics, akka.clusterTools,
-    other.groovy, other.redis % "provided", rxmongo.rxmongo % "provided"
+    circe.parser, circe.genericExtras, circe.java8,
+    other.logback, other.redis % "provided", rxmongo.rxmongo % "provided"
   )
 )
 .dependsOn(`protocol`)
@@ -43,3 +46,9 @@ lazy val `call`   = project in file("call")
 lazy val `sms`    = project in file("sms")
 //微信公众号
 lazy val `wechat` = project in file("wechat")
+
+addCommandAlias("calla", ";project call-core;assembly")
+addCommandAlias("smsa", ";project sms-core;assembly")
+addCommandAlias("paa", ";project pa-core;assembly")
+addCommandAlias("wechata", ";project wechat-core;assembly")
+addCommandAlias("corea", ";project core;assembly")

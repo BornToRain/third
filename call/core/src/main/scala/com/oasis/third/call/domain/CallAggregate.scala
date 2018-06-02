@@ -22,8 +22,7 @@ class CallAggregate extends AggregateRoot[Domain, CallCommand, CallEvent]
   }
   override def receiveCommand =
   {
-    case c: Bind   => log.info(s"Result on ${cluster.selfAddress.hostPort} is: ${state}")
-      persist(c.event)(afterPersist)
+    case c: Bind   => persist(c.event)(afterPersist)
     case c: HangUp => persist(c.event)(afterPersist)
     case c: Update => persist(c.event)(afterPersist)
   }
@@ -34,5 +33,6 @@ object CallAggregate
 {
   final val NAME = "call-aggregate"
 
-  def props(implicit runtime: ActorRuntime) = Props(new CallAggregate)
+  @inline
+  final def props(implicit runtime: ActorRuntime) = Props(new CallAggregate)
 }

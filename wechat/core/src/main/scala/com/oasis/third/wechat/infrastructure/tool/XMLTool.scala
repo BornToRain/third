@@ -25,7 +25,7 @@ object XMLTool
   xStream autodetectAnnotations true
   xStream registerConverter new ScalaOptionConverter
   xStream registerConverter new ScalaSeqConverter(xStream.getMapper)
-  xStream aliasSystemAttribute (null,"class")
+  xStream aliasSystemAttribute (null, "class")
 
   @inline
   def toXML(data: AnyRef) =

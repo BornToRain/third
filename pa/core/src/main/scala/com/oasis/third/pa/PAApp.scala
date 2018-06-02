@@ -12,12 +12,11 @@ import scala.language.postfixOps
 object PAAppStartUp extends App with ConfigLoader
 {
   //种子节点
-  val config = ConfigFactory.parseString(s"akka.remote.netty.tcp.port=2551")
-    .withFallback(loader)
+  val config = ConfigFactory parseString s"akka.remote.netty.tcp.port=2551" withFallback loader
 
   implicit val factory = ActorFactory(config)
 
-  factory.system actorOf (PAApp.props, PAApp.NAME)
+  factory.system actorOf (PAApp props, PAApp.NAME)
 }
 
 /**
@@ -27,16 +26,16 @@ class PAApp(implicit factory: ActorFactory) extends ActorL
 {
   import factory.runtime
 
-  private[this] val client = factory.cluster.createSingleton(PAClient.props)(PAClient.NAME)(APP)
-  private[this] val oasis  = context actorOf (OasisClient.props, OasisClient.NAME)
-  private[this] val api    = context actorOf (PAApi.props(client, oasis),PAApi.NAME)
+  private[this] val client = factory singleton (PAClient props, PAClient.NAME)
+  private[this] val oasis  = context actorOf (OasisClient props, OasisClient.NAME)
+  private[this] val api    = context actorOf (PAApi props (client, oasis),PAApi.NAME)
 
   Seq(client, oasis, api) foreach (context watch)
 
   override def receive =
   {
-    case Terminated(ref) => log.info(s"Actor已经关闭: ${ref.path}")
-      context.system.terminate
+    case Terminated(ref) => log info s"Actor已经关闭: ${ref.path}"
+      context.system terminate
   }
 }
 

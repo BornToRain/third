@@ -1,5 +1,7 @@
 package org.ryze.micro.core.tool
 
+import scala.language.postfixOps
+
 /**
   * 分布式全局ID生成器
   * tweeter的snowflake算法
@@ -43,6 +45,7 @@ class IdWorker(workerId: Int, dataCenterId: Int)
   /**
     * 获得下一个ID (该方法是线程安全的)
     */
+  @inline
   def nextId = synchronized
   {
     Option(timeGenerator) map
@@ -68,6 +71,7 @@ class IdWorker(workerId: Int, dataCenterId: Int)
   /**
     * 阻塞到下一毫秒,获得新的时间戳
     */
+  @inline
   private[this] def blockNextMillis(lastTimeStamp: Long) =
   {
     val timestamp = timeGenerator
@@ -78,6 +82,7 @@ class IdWorker(workerId: Int, dataCenterId: Int)
   /**
     * 生成以毫秒为单位的当前时间
     */
+  @inline
   private[this] def timeGenerator = System.currentTimeMillis
 }
 
@@ -86,5 +91,6 @@ object IdWorker
   //默认一台机器一个节点 单Worker实例
   private[this] val flowIdWorker = new IdWorker(1, 1)
 
-  def getId = flowIdWorker.nextId + ""
+  @inline
+  final def getId = flowIdWorker.nextId + ""
 }

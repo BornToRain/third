@@ -17,7 +17,7 @@ class SmsReadSide
   import runtime._
 
   //根据事件标签获取实时事件流
-  readJournal.eventsByTag(SmsEvent.TAG, Offset.noOffset) map (_.event) runWith Sink.actorRef(self, "completed")
+  readJournal eventsByTag (SmsEvent.TAG, Offset.noOffset) map (_.event) runWith Sink.actorRef(self, "completed")
 
   override def receive =
   {
@@ -28,7 +28,7 @@ class SmsReadSide
 object SmsReadSide
 {
   final val NAME = "sms-read"
-
-  def props(readJournal: EventsByTagQuery, repository: SmsRepository)(implicit runtime: ActorRuntime) =
+  @inline
+  final def props(readJournal: EventsByTagQuery, repository: SmsRepository)(implicit runtime: ActorRuntime) =
     Props(new SmsReadSide(readJournal, repository))
 }

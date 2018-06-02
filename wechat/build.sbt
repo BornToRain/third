@@ -6,9 +6,10 @@ lazy val `wechat-core` = (project in file ("core"))
   name                        := "wechat-core",
   libraryDependencies        ++= Seq(
     akka.httpXML,
-    other.xstream, other.logback
+    other.xstream
   ),
   mainClass       in assembly := Some("com.oasis.third.wechat.WechatAppStartUp"),
-  assemblyJarName in assembly := "wechat.jar"
+  assemblyJarName in assembly := "wechat.jar",
+  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 )
 .dependsOn(LocalProject("core"))

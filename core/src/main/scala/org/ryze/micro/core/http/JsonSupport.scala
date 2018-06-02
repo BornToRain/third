@@ -9,13 +9,15 @@ import io.circe._
 import io.circe.generic.extras.{AutoDerivation, Configuration}
 import io.circe.java8.time.TimeInstances
 
+import scala.language.postfixOps
+
 /**
   * Json自动Encode、Decode支持
   */
 trait JsonSupport extends CirceSupport with AutoDerivation with TimeInstances
 {
   override implicit val printer       = Printer.noSpaces copy (dropNullValues = true)
-  override implicit val configuration = Configuration.default.withDefaults.withDiscriminator("type")
+  override implicit val configuration = (Configuration.default withDefaults) withDiscriminator "type"
 }
 
 /**
@@ -37,20 +39,20 @@ trait CirceSupport
     * Json => HttpEntity
     */
   @inline
-  implicit def jsonMarshaller: ToEntityMarshaller[Json] = Marshaller.oneOf(mediaTypes: _*)
+  implicit final def jsonMarshaller: ToEntityMarshaller[Json] = Marshaller.oneOf(mediaTypes: _*)
   {
     `type` => Marshaller.withFixedContentType(ContentType(`type`))(json => HttpEntity(`type`, printer pretty json))
   }
   /**
     * T => HttpEntity
     */
-  implicit def marshaller[T : Encoder]: ToEntityMarshaller[T] = jsonMarshaller compose Encoder[T].apply
+  @inline
+  implicit final def marshaller[T : Encoder]: ToEntityMarshaller[T] = jsonMarshaller compose Encoder[T].apply
   /**
     * HttpEntity => Json
     */
   @inline
-  implicit def jsonUnmarshaller: FromEntityUnmarshaller[Json] = Unmarshaller.byteStringUnmarshaller
-  .forContentTypes(unmarshallerMediaTypes: _*) map
+  implicit final def jsonUnmarshaller: FromEntityUnmarshaller[Json] = (Unmarshaller byteStringUnmarshaller) forContentTypes(unmarshallerMediaTypes: _*) map
   {
     case ByteString.empty => throw Unmarshaller.NoContentException
     case d                => (jawn parseByteBuffer d.asByteBuffer) fold (throw _, identity)
@@ -58,8 +60,10 @@ trait CirceSupport
   /**
     * HttpEntity => T
     */
-  implicit def unmarshaller[T : Decoder]: FromEntityUnmarshaller[T] =
+  @inline
+  implicit final def unmarshaller[T : Decoder]: FromEntityUnmarshaller[T] =
   {
+    @inline
     def decode(json: Json) = (Decoder[T] decodeJson json) fold (throw _, identity)
     jsonUnmarshaller map decode
   }

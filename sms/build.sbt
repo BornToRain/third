@@ -15,9 +15,10 @@ lazy val `sms-core` = (project in file("core"))
 .settings(
   name                 := "sms-core",
   libraryDependencies ++= Seq(
-    other.logback,
-    akka.persistence, akka.persistenceQuery, akka.persistenceRxMongo,
+    akka.persistenceQuery, akka.persistenceRxMongo,
     rxmongo.rxmongo, rxmongo.rxmongoStream
-  )
+  ),
+  mainClass       in assembly := Some("com.oasis.third.sms.SmsAppStartUp"),
+  assemblyJarName in assembly := "sms.jar"
 )
 .dependsOn(`sms-protocol`, LocalProject("core"))

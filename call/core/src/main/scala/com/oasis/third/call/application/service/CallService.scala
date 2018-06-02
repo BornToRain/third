@@ -31,6 +31,7 @@ class CallService
   import runtime._
 
   //绑定
+  @inline
   private[this] def bind(r: CallRequest.Bind) = Call validate r map
   {
     _ =>
@@ -39,6 +40,7 @@ class CallService
       id
   }
   //挂断
+  @inline
   private[this] def hangUp(cmd: HangUp) = for
   {
     a <- (domain ? cmd).mapTo[Option[Call]]
@@ -53,6 +55,7 @@ class CallService
   @inline
   private[this] def getBindMobile(c: GetStateBy) = (read ? c).mapTo[Option[String]]
   //更新通话
+  @inline
   private[this] def update(cmd: Update) =
   {
     //本次通话时长 单位:秒
@@ -60,14 +63,14 @@ class CallService
     {
       a <- cmd.beginTime
       b <- cmd.endTime
-    } yield DateTool.compare(a)(b)(DateTool.SECONDS)
+    } yield DateTool.compare(a, b, DateTool.SECONDS)
     OptionT((domain ? (cmd copy (callTime = callTime))).mapTo[Domain]) map
     {
       //回调地址存在则回调
-      d => if(d.noticeUri.isDefined)
+      d => if(d.noticeUri isDefined)
       {
         val entity = HttpEntity(ContentTypes.`application/json`, printer pretty (CallAssembler toDTO d).asJson)
-        Http().singleRequest(HttpRequest(HttpMethods.POST, uri = d.noticeUri.get, entity = entity))
+        Http() singleRequest HttpRequest(HttpMethods.POST, uri = d.noticeUri get, entity = entity)
       }
     }
   }
@@ -87,10 +90,10 @@ class CallService
 
 object CallService
 {
-
   final val NAME = "call-service"
 
-  def props(domain: ActorRef, read: ActorRef, moor: ActorRef)(implicit runtime: ActorRuntime) =
+  @inline
+  final def props(domain: ActorRef, read: ActorRef, moor: ActorRef)(implicit runtime: ActorRuntime) =
     Props(new CallService(domain, read, moor))
 
   case class CallDTO
@@ -107,5 +110,4 @@ object CallService
     beginTime: Option[String],
     endTime  : Option[String]
   )
-
 }

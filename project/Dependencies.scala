@@ -43,15 +43,6 @@ object Dependencies
     private[this] def apply(name: String) = "io.circe" %% s"circe-$name" % Version.circe
   }
 
-  object fp
-  {
-    lazy val catsCore = apply("core")
-    lazy val catsFree = apply("free")
-
-    @inline
-    private[this] def apply(name: String) = "org.typelevel" %% s"cats-$name" % Version.cats
-  }
-
   object rxmongo
   {
     lazy val rxmongo = apply("reactivemongo")
@@ -69,7 +60,7 @@ object Dependencies
     //Protobuf序列化
     lazy val protobuf = "com.thesamet.scalapb"     %% "scalapb-runtime"    % scalapb.compiler.Version.scalapbVersion % "protobuf"
     //Redis
-    lazy val redis    = "com.github.etaty"         %% "rediscala"          % "1.8.0"
+    lazy val redis    = "com.github.Ma27"         %% "rediscala"          % "1.8.3"
     //xstream
     lazy val xstream  = "com.thoughtworks.xstream" %  "xstream"            % "1.4.10"
   }

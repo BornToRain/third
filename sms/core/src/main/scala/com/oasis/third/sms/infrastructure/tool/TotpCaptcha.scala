@@ -5,6 +5,7 @@ import javax.crypto.spec.SecretKeySpec
 import org.apache.commons.codec.binary.Base32
 
 import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.math.{pow, BigInt}
 
 sealed trait CryptoAlgorithm
@@ -19,12 +20,13 @@ object TotpCaptcha
   //验证码长度
   private[this] val length    = 4
 
-  private[this] def getTotp(secret: String)(timeStamp: Long)  =
+  @inline
+  private[this] def getTotp(secret: String, timeStamp: Long)  =
   {
-    val timeWindow   = timeStamp / validTime.toMillis
+    val timeWindow   = timeStamp / (validTime toMillis)
     val crypto       = HmacSHA512
     val msg          = BigInt(timeWindow).toByteArray.reverse.padTo(8, 0.toByte).reverse
-    val hash         = hmacSha(crypto.toString)(new Base32() decode secret)(msg)
+    val hash         = hmacSha(crypto toString,new Base32() decode secret, msg)
     val offset       = hash(hash.length - 1) & 0xf
     val binary: Long = ((hash(offset) & 0x7f) << 24) |
     ((hash(offset + 1) & 0xff) << 16) |
@@ -32,11 +34,12 @@ object TotpCaptcha
     (hash(offset + 3) & 0xff))
     val otp          = binary % pow(10, length).toLong
 
-    ("0" * length + otp.toString) takeRight length
+    ("0" * length + otp toString) takeRight length
   }
-  private def hmacSha(crypto: String)(keyBytes: Array[Byte])(text: Array[Byte]) =
+  @inline
+  private def hmacSha(crypto: String, keyBytes: Array[Byte], text: Array[Byte]) =
   {
-    val hmac   = Mac.getInstance(crypto)
+    val hmac   = Mac getInstance crypto
     val macKey = new SecretKeySpec(keyBytes, "RAW")
 
     hmac init macKey
@@ -47,11 +50,10 @@ object TotpCaptcha
     * 获取当前时间验证码
     */
   @inline
-  def getCaptcha(mobile: String)(`type`: String) = getTotp(s"$key-$mobile-${`type`.toUpperCase}")(System.currentTimeMillis)
+  final def getCaptcha(mobile: String, `type`: String) = getTotp(s"$key-$mobile-${`type` toUpperCase}", System.currentTimeMillis)
   /**
     * 获取指定时间验证码
     */
   @inline
-  def getCaptchaAtTime(mobile: String)(`type`: String)(timeStamp: Long) = getTotp(s"$key-$mobile-${`type`.toUpperCase}")(timeStamp)
-
+  final def getCaptchaAtTime(mobile: String, `type`: String, timeStamp: Long) = getTotp(s"$key-$mobile-${`type` toUpperCase}", timeStamp)
 }

@@ -43,10 +43,10 @@ case class Call
 {
   //挂断
   @inline
-  def hangUp(e: HungUp) = copy(updateTime = e.updateTime map ProtobufTool.toDate)
+  def hangUp(e: HungUp) = copy (updateTime = e.updateTime map ProtobufTool.toDate)
   //更新
   @inline
-  def update(e: Updated) = copy(
+  def update(e: Updated) = copy (
     callId      = e.callId,
     call        = e.call,
     to          = e.to,
@@ -66,13 +66,17 @@ object Call
 
   implicit val bson = Macros.handler[Call]
 
+  @inline
   private[this] def validateCall(call: String) = Regex.MOBILE findFirstIn call map (Right(_)) getOrElse Left(DomainError(0, "呼叫方错误!"))
+  @inline
   private[this] def validateTo(to: String) = Regex.MOBILE findFirstIn to map (Right(_)) getOrElse Left(DomainError(1, "被呼叫方错误!"))
+  @inline
   private[this] def validateNoticeUri(noticeUri: Option[String]) = noticeUri match
   {
-    case s if s.exists(Regex.URI.pattern matcher _ matches) => Right(s)
-    case _                                                  => Left(DomainError(2, "回调通知地址错误!"))
+    case s if s exists (Regex.URI.pattern matcher _ matches) => Right(s)
+    case _                                                   => Left(DomainError(2, "回调通知地址错误!"))
   }
+  @inline
   private[this] def validateThirdId(thirdId: Option[String]) = thirdId match
   {
     case s @ Some(_) => Right(s)
@@ -82,7 +86,8 @@ object Call
   /**
     * 绑定请求校验
     */
-  def validate(r: Bind) = for
+  @inline
+  final def validate(r: Bind) = for
   {
     _ <- validateCall(r.call)
     _ <- validateTo(r.to)
@@ -92,12 +97,13 @@ object Call
   /**
     * 创建
     */
-  def create(e: Bound) = Call(
+  @inline
+  final def create(e: Bound) = Call(
     _id        = e.id,
     call       = e.call,
     to         = e.to,
     noticeUri  = e.noticeUri,
     thirdId    = e.thirdId,
-    createTime = (e.createTime map ProtobufTool.toDate).get
+    createTime = (e.createTime map ProtobufTool.toDate) get
   )
 }

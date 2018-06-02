@@ -8,6 +8,8 @@ import org.ryze.micro.core.domain.DomainError
 import org.ryze.micro.core.tool.Regex
 import org.ryze.micro.protocol.tool.ProtobufTool
 
+import scala.language.postfixOps
+
 case class Sms
 (
   _id       : String,
@@ -28,12 +30,15 @@ object Sms
 
   implicit val bson = Macros.handler[Sms]
 
-  private[this] def validateMobile(moblie: String) = Regex.MOBILE.findFirstIn(moblie) map (Right(_)) getOrElse Left(DomainError(0, "手机号错误!"))
+  @inline
+  private[this] def validateMobile(moblie: String) = Regex.MOBILE findFirstIn moblie map (Right(_)) getOrElse Left(DomainError(0, "手机号错误!"))
+  @inline
   private[this] def validateType(`type`: String) = Option(`type`) match
   {
     case Some(d) if SmsType.seq map (_.name) contains d => Right(d)
     case _                                              => Left(DomainError(1, "短信类型错误!"))
   }
+  @inline
   private[this] def validateCaptcha(captcha: Option[String]) = captcha match
   {
     case a@ Some(d) if d.length == 4 => Right(a)
@@ -43,7 +48,8 @@ object Sms
   /**
     * 创建请求校验
     */
-  def validate(r: Create) = for
+  @inline
+  final def validate(r: Create) = for
   {
     _ <- validateMobile(r.mobile)
     _ <- validateType(r.`type`)
@@ -51,7 +57,8 @@ object Sms
   /**
     * 校验请求校验
     */
-  def validate(r: Validate) = for
+  @inline
+  final def validate(r: Validate) = for
   {
     _ <- validateMobile(r.mobile)
     _ <- validateType(r.`type`)
@@ -60,5 +67,6 @@ object Sms
   /**
     * 创建
     */
-  def create(e: Created) = Sms(e.id, e.mobile, e.`type`, e.captcha, e.messageId, (e.createTime map ProtobufTool.toDate).get)
+  @inline
+  final def create(e: Created) = Sms(e.id, e.mobile, e.`type`, e.captcha, e.messageId, (e.createTime map ProtobufTool.toDate) get)
 }

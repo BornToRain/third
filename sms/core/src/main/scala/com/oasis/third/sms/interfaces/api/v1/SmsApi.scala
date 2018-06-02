@@ -17,10 +17,10 @@ class SmsApi(service: ActorRef)(implicit runtime: ActorRuntime) extends RestApi 
 {
   import runtime._
 
-  Http(runtime.as).bindAndHandle(route, SmsApi.host, SmsApi.port) onComplete
+  Http(runtime.as) bindAndHandle (route, SmsApi.host, SmsApi.port) onComplete
   {
-    case Success(d) => log.info(s"短信模块启动成功: ${d.localAddress}")
-    case Failure(e) => log.error(s"短信模块启动失败: ${e.getMessage}")
+    case Success(d) => log info s"短信模块启动成功: ${d.localAddress}"
+    case Failure(e) => log error s"短信模块启动失败: ${e.getMessage}"
   }
 
   override def route = logRequestResult(("sms", Logging.InfoLevel))
@@ -53,11 +53,11 @@ class SmsApi(service: ActorRef)(implicit runtime: ActorRuntime) extends RestApi 
 object SmsApi extends ConfigLoader
 {
   final val NAME = "sms-api"
+  @inline
+  final def props(service: ActorRef)(implicit runtime: ActorRuntime) = Props(new SmsApi(service))
 
-  private[this] val httpConfig = loader.getConfig("http")
+  private[this] val httpConfig = loader getConfig "http"
 
-  def props(service: ActorRef)(implicit runtime: ActorRuntime) = Props(new SmsApi(service))
-
-  lazy val host = httpConfig.getString("host")
-  lazy val port = httpConfig.getInt("port")
+  lazy val host = httpConfig getString "host"
+  lazy val port = httpConfig getInt "port"
 }

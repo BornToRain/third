@@ -20,7 +20,7 @@ object CallAppStartUp extends App with ConfigLoader
 {
   implicit val factory = ActorFactory(loader)
 
-  factory.system actorOf(CallApp.props, CallApp.NAME)
+  factory.system actorOf(CallApp props, CallApp.NAME)
 }
 
 /**
@@ -34,23 +34,18 @@ class CallApp(implicit factory: ActorFactory) extends ActorL
   private[this] val redis       = RdsClient(factory.config).rds
   private[this] val mongodb     = MongoDBClient(factory.config).db
   private[this] val repository  = CallRepositoryImpl(mongodb)
-  private[this] val moor        = context actorOf(MoorClient.props, MoorClient.NAME)
-  private[this] val domain      =
-  {
-    factory.cluster.shard(CallAggregate.props)(CallAggregate.NAME)(APP)
-    (factory.cluster getShard CallAggregate.NAME).get
-  }
-    //context actorOf(CallAggregate.props, CallAggregate.NAME)
-  private[this] val read        = context actorOf(CallReadSide.props(readJournal, repository, redis), CallReadSide.NAME)
-  private[this] val service     = context actorOf(CallService.props(domain, read, moor), CallService.NAME)
-  private[this] val api         = context actorOf(CallApi.props(service), CallApi.NAME)
+  private[this] val moor        = context actorOf(MoorClient props, MoorClient.NAME)
+  private[this] val domain      = factory singleton (CallAggregate props, CallAggregate.NAME)
+  private[this] val read        = context actorOf (CallReadSide props (readJournal, repository, redis), CallReadSide.NAME)
+  private[this] val service     = context actorOf (CallService props (domain, read, moor), CallService.NAME)
+  private[this] val api         = context actorOf (CallApi props service, CallApi.NAME)
 
   Seq(moor, domain, read, service, api) foreach (context watch)
 
   override def receive =
   {
-    case Terminated(ref) => log.info(s"Actor已经关闭: ${ref.path}")
-      context.system.terminate
+    case Terminated(ref) => log info s"Actor已经关闭: ${ref.path}"
+      context.system terminate
   }
 }
 
@@ -58,5 +53,6 @@ object CallApp
 {
   final val NAME = "call-app"
 
-  def props(implicit factory: ActorFactory) = Props(new CallApp)
+  @inline
+  final def props(implicit factory: ActorFactory) = Props(new CallApp)
 }

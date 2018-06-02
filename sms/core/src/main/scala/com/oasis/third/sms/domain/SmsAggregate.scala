@@ -23,6 +23,6 @@ class SmsAggregate extends AggregateRoot[Domain, SmsCommand, SmsEvent]
 object SmsAggregate
 {
   final val NAME = "sms-aggregate"
-
-  def props = Props(new SmsAggregate)
+  @inline
+  final def props = Props(new SmsAggregate)
 }

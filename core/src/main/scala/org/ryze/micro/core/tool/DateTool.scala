@@ -20,30 +20,31 @@ object DateTool
     * yyyyMMddHHmmss格式时间戳
     */
   @inline
-  def datetimeStamp = LocalDateTime.now.format(DateTimeFormatter.ofPattern(TIMESTAMP))
+  final def datetimeStamp = LocalDateTime.now format DateTimeFormatter.ofPattern(TIMESTAMP)
   /**
     * 解析日期字符串
     */
   @inline
-  def parse(s: String, pattern: String = FULLDATE) =
-    LocalDateTime parse(s, DateTimeFormatter ofPattern(pattern, Locale.US) withZone ZoneId.systemDefault)
+  final def parse(s: String, pattern: String = FULLDATE) =
+    LocalDateTime parse (s, DateTimeFormatter ofPattern(pattern, Locale.US) withZone ZoneId.systemDefault)
   /**
     * 日期格式化
     */
   @inline
-  def format(dateTime: LocalDateTime, pattern: String = FULLDATE) =
+  final def format(dateTime: LocalDateTime, pattern: String = FULLDATE) =
     dateTime format (DateTimeFormatter ofPattern(pattern, Locale.US) withZone ZoneId.systemDefault)
   @inline
-  def formatDate(date: Date, pattern: String = FULLDATE) = format(toLocalDateTime(date), pattern)
+  final def formatDate(date: Date, pattern: String = FULLDATE) = format(toLocalDateTime(date), pattern)
   @inline
-  def toDate(dateTime: LocalDateTime) = Date from (dateTime atZone ZoneId.systemDefault).toInstant
+  final def toDate(dateTime: LocalDateTime) = Date from (dateTime atZone ZoneId.systemDefault).toInstant
   @inline
-  def toLocalDateTime(date: Date) = (date.toInstant atZone ZoneId.systemDefault).toLocalDateTime
+  final def toLocalDateTime(date: Date) = (date.toInstant atZone ZoneId.systemDefault).toLocalDateTime
   /**
     * x与y的时间差
     * x<y?正数:复数 默认单位分钟
     */
-  def compare(x: LocalDateTime)(y: LocalDateTime)(`type`: String = MINUTES) = `type` match
+  @inline
+  final def compare(x: LocalDateTime, y: LocalDateTime, `type`: String = MINUTES) = `type` match
   {
     case SECONDS => ChronoUnit.SECONDS between (x, y)
     case MINUTES => ChronoUnit.MINUTES between (x, y)

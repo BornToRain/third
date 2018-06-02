@@ -19,15 +19,16 @@ class CallApi(service: ActorRef)(implicit runtime: ActorRuntime) extends RestApi
 {
   import runtime._
 
-  Http(runtime.as).bindAndHandle(route, CallApi.host, CallApi.port) onComplete
+  Http(runtime.as) bindAndHandle (route, CallApi.host, CallApi.port) onComplete
   {
-    case Success(d) => log.info(s"电话模块启动成功: ${d.localAddress}")
-    case Failure(e) => log.error(s"电话模块启动失败: ${e.getMessage}")
+    case Success(d) => log info  s"电话模块启动成功: ${d.localAddress}"
+    case Failure(e) => log error s"电话模块启动失败: ${e.getMessage}"
   }
 
   /**
     * 将QueryString字符串转成Map
     */
+  @inline
   private[this] def convertMap(qs: String) = (Map.empty[String, String] /: (qs split "&" map (_ split "=")))
   {
     case (map, Array(x, y)) => map + (x -> y)
@@ -36,14 +37,15 @@ class CallApi(service: ActorRef)(implicit runtime: ActorRuntime) extends RestApi
   /**
     * Map转实体
     */
+  @inline
   private[this] def formMap(map: Map[String, String]) = Update(
     id          = map("ActionID"),
     call        = map("CallNo"),
     to          = map("CalledNo"),
     `type`      = map.get("CallType"),
-    ringTime    = map.get("Ring") map (DateTool.parse(_)),
-    beginTime   = map.get("Begin") map (DateTool.parse(_)),
-    endTime     = map.get("End") map (DateTool.parse(_)),
+    ringTime    = map.get("Ring") map (DateTool parse _),
+    beginTime   = map.get("Begin") map (DateTool parse _),
+    endTime     = map.get("End") map (DateTool parse _),
     status      = map.get("State"),
     eventStatus = map.get("CallState"),
     recordFile  = map.get("RecordFile"),
@@ -94,9 +96,9 @@ class CallApi(service: ActorRef)(implicit runtime: ActorRuntime) extends RestApi
           uri => complete
           {
             val map = convertMap(uri.rawQueryString.get)
-            log.info("+---------------------------------------------------------------------------------------------------------------------------+")
+            log info "+---------------------------------------------------------------------------------------------------------------------------+"
             map foreach { case (k, v) => log.info(s"$k: $v") }
-            log.info("+---------------------------------------------------------------------------------------------------------------------------+")
+            log info "+---------------------------------------------------------------------------------------------------------------------------+"
             val cmd = formMap(map)
             service ! cmd
             OK
@@ -113,10 +115,11 @@ object CallApi extends ConfigLoader
 {
   final val NAME = "call-api"
 
-  private[this] val httpConfig = loader.getConfig("http")
+  private[this] val httpConfig = loader getConfig "http"
 
-  def props(service: ActorRef)(implicit runtime: ActorRuntime) = Props(new CallApi(service))
+  @inline
+  final def props(service: ActorRef)(implicit runtime: ActorRuntime) = Props(new CallApi(service))
 
-  lazy val host = httpConfig.getString("host")
-  lazy val port = httpConfig.getInt("port")
+  lazy val host = httpConfig getString "host"
+  lazy val port = httpConfig getInt "port"
 }

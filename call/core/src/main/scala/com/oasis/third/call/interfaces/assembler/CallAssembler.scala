@@ -7,13 +7,13 @@ import org.ryze.micro.core.tool.DateTool
 object CallAssembler
 {
   @inline
-  def toDTO(d: Call) = CallDTO(
+  final def toDTO(d: Call) = CallDTO(
     id        = d._id,
     thirdId   = d.thirdId,
     callState = d.status,
     state     = d.eventStatus,
     callTime  = d.callTime,
-    beginTime = d.beginTime map (DateTool.formatDate(_)),
-    endTime   = d.endTime map (DateTool.formatDate(_))
+    beginTime = d.beginTime map (DateTool formatDate _),
+    endTime   = d.endTime map (DateTool formatDate _)
   )
 }

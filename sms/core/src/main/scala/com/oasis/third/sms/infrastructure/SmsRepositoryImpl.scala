@@ -5,11 +5,14 @@ import org.ryze.micro.core.actor.ActorRuntime
 import reactivemongo.api.DefaultDB
 import reactivemongo.api.collections.bson.BSONCollection
 
-case class SmsRepositoryImpl(db: DefaultDB)(implicit runtime: ActorRuntime) extends SmsRepository
+import scala.concurrent.Future
+
+case class SmsRepositoryImpl(db: Future[DefaultDB])(implicit runtime: ActorRuntime) extends SmsRepository
 {
   import runtime._
 
-  private[this] val collection = db[BSONCollection]("sms")
+  @inline
+  private[this] def collection: Future[BSONCollection] = db map (_ collection "sms")
 
-  override def insert(d: Sms) = collection insert d map (_.ok)
+  override def insert(d: Sms) = collection flatMap (_ insert d map (_.ok))
 }

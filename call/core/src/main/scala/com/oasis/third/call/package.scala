@@ -1,10 +1,10 @@
 package com.oasis.third
 
-import org.ryze.micro.core.domain.DomainError
+import org.ryze.micro.core.domain.{DomainError, DomainName}
 
 package object call
 {
-  final val APP = "call"
+  implicit final val APP = DomainName("call")
 
   type Result[A] = Either[DomainError, A]
 }

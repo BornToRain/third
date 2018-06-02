@@ -17,16 +17,12 @@ lazy val `pa-core` = (project in file ("core"))
 .settings(
   name                        := "pa-core",
   libraryDependencies        ++= Seq(
-    fp.catsCore,
     other.logback,
     //金管家用
     "commons-codec" % "commons-codec" % "1.11",
     "commons-lang"  % "commons-lang"  % "2.6"
   ),
   mainClass       in assembly := Some("com.oasis.third.pa.PAAppStartUp"),
-  assemblyJarName in assembly := "pa.jar",
-  addCompilerPlugin(
-    "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full
-  )
+  assemblyJarName in assembly := "pa.jar"
 )
 .dependsOn(`pa-protocol`, LocalProject("core"))

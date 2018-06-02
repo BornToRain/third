@@ -17,9 +17,9 @@ abstract class AggregateRoot[State: ClassTag, Command <: DomainCommand: ClassTag
   private[this] var eventCount = 0
 
   @inline
-  private[this] def reply: Unit = sender ! state
+  private[this] def reply(): Unit = sender ! state
   @inline
-  private[this] def publish(event: Event) = mediator ! Publish(persistenceId, event, sendOneMessageToEachGroup = true)
+  private[this] def publish(event: Event): Unit = mediator ! Publish(persistenceId, event, sendOneMessageToEachGroup = true)
 
   var state: State
   //分布式订阅
@@ -34,32 +34,33 @@ abstract class AggregateRoot[State: ClassTag, Command <: DomainCommand: ClassTag
     * 4.回复
     * 5.发布事件到事件总线
     */
+  @inline
   def afterPersist(event: Event): Unit =
   {
     eventCount += 1
-    if(eventCount == AggregateRoot.snapshot)
+    if(eventCount == AggregateRoot.SNAPSHOT)
     {
-      log.debug("保存快照")
+      log debug "保存快照"
       saveSnapshot(state)
       eventCount = 0
     }
     updateState(event)
-    reply
+    reply()
     publish(event)
   }
 
   //1分钟钝化
-  override def preStart(): Unit = context.setReceiveTimeout(1.minutes)
+  override def preStart(): Unit = context setReceiveTimeout 1.minutes
   override def receiveRecover =
   {
     case SnapshotOffer(_, s: State) => state = s
     case event: Event               => eventCount +=1
-    updateState(event)
+      updateState(event)
   }
 }
 
 object AggregateRoot
 {
   //10事件 => 1快照
-  val snapshot = 10
+  final val SNAPSHOT = 10
 }

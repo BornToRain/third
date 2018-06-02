@@ -11,10 +11,10 @@ case class RdsClient(config: Config)(implicit runtime: ActorRuntime)
 {
   import runtime._
 
-  private[this] val redisConfig = config.getConfig("redis")
+  private[this] val redisConfig = config getConfig "redis"
 
-  lazy val host = redisConfig.getString("host")
-  lazy val port = redisConfig.getInt("port")
-  lazy val pwd  = Option(redisConfig.getString("password"))
+  lazy val host = redisConfig getString "host"
+  lazy val port = redisConfig getInt "port"
+  lazy val pwd  = Option(redisConfig getString "password")
   lazy val rds  = RedisClient(host, port, pwd)
 }
