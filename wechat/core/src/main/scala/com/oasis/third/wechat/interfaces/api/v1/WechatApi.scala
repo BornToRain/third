@@ -5,10 +5,12 @@ import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
 import akka.pattern._
-import com.oasis.third.wechat.infrastructure.service.PaymentClient.request.Payment
+import com.oasis.third.wechat.infrastructure.service.PaymentClient.Request
+import com.oasis.third.wechat.infrastructure.service.PaymentClient.response.{JS, Response}
 import com.oasis.third.wechat.infrastructure.service.WechatClient.request._
 import com.oasis.third.wechat.infrastructure.service.WechatClient.response.JsSDK
 import com.oasis.third.wechat.infrastructure.tool.XMLTool
+import com.oasis.third.wechat.infrastructure.tool.CommonTool
 import com.oasis.third.wechat.interfaces.dto.{Text, WechatDTO}
 import io.circe.JsonObject
 import org.ryze.micro.core.actor.{ActorL, ActorRuntime}
@@ -31,10 +33,6 @@ class WechatApi
     case Success(d) => log info s"微信模块启动成功: ${d.localAddress}"
     case Failure(e) => log error s"微信模块启动失败: ${e.getMessage}"
   }
-
-  //产生指定位数随机数
-  @inline
-  private[this] def createRandom(i: Int) = Random.alphanumeric.take(i).mkString
 
   override def route = logRequestResult(("wechat", Logging.InfoLevel))
   {
@@ -84,24 +82,24 @@ class WechatApi
         {
           r => complete
           {
-            (client ? GetJsSign(DateTool.datetimeStamp, createRandom(32), r)).mapTo[JsSDK]
+            (client ? GetJsSign(DateTool.datetimeStamp, CommonTool createRandom 32, r)).mapTo[JsSDK]
           }
         } ~
         //公众号支付
-        (post & entity(as[Payment]))
+        (post & entity(as[Request]))
         {
           r => complete
           {
-            (payment ? r).mapTo[String]
+            (payment ? r).mapTo[JS]
           }
         }
       } ~
       //小程序支付
-      (path("applet") & post & entity(as[Payment]))
+      (path("applet") & post & entity(as[Request]))
       {
         r => complete
         {
-          (payment ? r).mapTo[String]
+          (payment ? r).mapTo[JS]
         }
       }
     }

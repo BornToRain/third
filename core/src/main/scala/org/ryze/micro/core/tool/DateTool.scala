@@ -21,6 +21,8 @@ object DateTool
     */
   @inline
   final def datetimeStamp = LocalDateTime.now format DateTimeFormatter.ofPattern(TIMESTAMP)
+  @inline
+  final def timeStamp = System.currentTimeMillis / 1000
   /**
     * 解析日期字符串
     */

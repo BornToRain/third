@@ -35,10 +35,10 @@ object XMLTool
   }
 
   @inline
-  def fromXML(s: String) =
+  def fromXML[T](s: String) =
   {
     xStream alias("xml", classOf[String])
-    xStream fromXML s
+    (xStream fromXML s).asInstanceOf[T]
   }
 }
 
