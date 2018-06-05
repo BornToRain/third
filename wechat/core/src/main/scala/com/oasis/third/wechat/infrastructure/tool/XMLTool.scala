@@ -2,6 +2,7 @@ package com.oasis.third.wechat.infrastructure.tool
 
 import java.io.Writer
 
+import com.oasis.third.wechat.infrastructure.service.PaymentClient.response.Response
 import com.thoughtworks.xstream.XStream
 import com.thoughtworks.xstream.converters.{Converter, MarshallingContext, UnmarshallingContext}
 import com.thoughtworks.xstream.converters.collections.AbstractCollectionConverter
@@ -28,17 +29,17 @@ object XMLTool
   xStream aliasSystemAttribute (null, "class")
 
   @inline
-  def toXML(data: AnyRef) =
+  final def toXML(data: AnyRef) =
   {
     xStream alias ("xml", data.getClass)
     xStream toXML data
   }
 
   @inline
-  def fromXML[T](s: String) =
+  final def fromXML(s: String) =
   {
-    xStream alias("xml", classOf[String])
-    (xStream fromXML s).asInstanceOf[T]
+    xStream alias("xml", classOf[Response])
+    (xStream fromXML s).asInstanceOf[Response]
   }
 }
 
@@ -51,7 +52,7 @@ class ScalaOptionConverter extends Converter
   override def marshal(source: scala.Any, writer: HierarchicalStreamWriter, context: MarshallingContext): Unit =
   {
     val opt = source.asInstanceOf[Option[_]]
-    context convertAnother opt.get
+    for (value <- opt) context convertAnother value
   }
   override def canConvert(`type`: Class[_]) = classOf[Some[_]].isAssignableFrom(`type`) || `type`.isAssignableFrom(None.getClass)
 }
@@ -77,6 +78,9 @@ class ScalaSeqConverter(_mapper: Mapper) extends AbstractCollectionConverter(_ma
   override def marshal(source: scala.Any, writer: HierarchicalStreamWriter, context: MarshallingContext) =
   {
     val xs = source.asInstanceOf[List[_]]
-    xs foreach (writeItem(_, context, writer))
+    for (item <- xs)
+    {
+      writeItem(item, context, writer)
+    }
   }
 }

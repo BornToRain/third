@@ -23,18 +23,18 @@ class SmsService(domain: ActorRef, alibaba: ActorRef)(implicit runtime: ActorRun
   {
     case Right(_) =>
       val id   = IdWorker.getId
-      val code = Some(TotpCaptcha getCaptcha (r.mobile, r.`type`))
-      (alibaba ? Send(r.mobile, SmsType(r.`type`), code)).mapTo[String] map
+      val code = Some(TotpCaptcha getCaptcha (r.mobile, r.smsType))
+      (alibaba ? Send(r.mobile, SmsType(r.smsType), code)).mapTo[String] map
       {
         mId =>
-          domain ! SmsCommand.Create(id, r.mobile, r.`type`, code, mId)
+          domain ! SmsCommand.Create(id, r.mobile, r.smsType, code, mId)
           Right(id)
       }
     case Left(e) => Future(Left(e))
   }
   //校验短信
   @inline
-  private[this] def validate(r: Validate) = Sms validate r map ((TotpCaptcha getCaptcha (r.mobile, r.`type`)) == _.captcha)
+  private[this] def validate(r: Validate) = Sms validate r map ((TotpCaptcha getCaptcha (r.mobile, r.smsType)) == _.captcha)
 
   override def receive =
   {

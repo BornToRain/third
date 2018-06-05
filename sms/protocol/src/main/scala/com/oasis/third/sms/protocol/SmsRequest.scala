@@ -7,6 +7,6 @@ sealed trait SmsRequest
 
 object SmsRequest
 {
-  case class Create(mobile: String, `type`: String) extends SmsRequest
-  case class Validate(mobile: String, `type`: String, captcha: String) extends SmsRequest
+  case class Create(mobile: String, smsType: String) extends SmsRequest
+  case class Validate(mobile: String, smsType: String, captcha: String) extends SmsRequest
 }

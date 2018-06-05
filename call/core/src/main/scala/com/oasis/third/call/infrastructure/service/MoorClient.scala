@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.pattern._
 import com.oasis.third.call.infrastructure.service.MoorClient.request.HangUp
-import io.circe.JsonObject
+import io.circe.Json
 import org.ryze.micro.core.actor.{ActorL, ActorRuntime}
 import org.ryze.micro.core.http.JsonSupport
 import org.ryze.micro.core.tool.{Base64, ConfigLoader, DateTool, MD5}
@@ -49,11 +49,11 @@ class MoorClient(implicit runtime: ActorRuntime) extends ActorL with JsonSupport
       Future(authHeader(ts), authParameter(ts))
     }
     c <- Http() singleRequest HttpRequest(HttpMethods.POST, Uri(s"${MoorClient.gateway}$uri") withQuery Query("sig" -> b._2), entity = a)
-    d <- Unmarshal(c.entity).to[JsonObject]
+    d <- Unmarshal(c.entity).to[Json]
   } yield d
   //挂断
   @inline
-  private[this] def hangUp(c: HangUp) = post(s"v20160818/call/hangup/${MoorClient.account}", Marshal(c).to[RequestEntity]) map (_.toString)
+  private[this] def hangUp(c: HangUp) = post(s"v20160818/call/hangup/${MoorClient.account}", Marshal(c).to[RequestEntity]) map (_.as[String] getOrElse "")
 
   override def receive =
   {

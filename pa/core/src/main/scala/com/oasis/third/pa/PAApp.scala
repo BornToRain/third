@@ -26,7 +26,8 @@ class PAApp(implicit factory: ActorFactory) extends ActorL
 {
   import factory.runtime
 
-  private[this] val client = factory singleton (PAClient props, PAClient.NAME)
+  factory singleton (PAClient props, PAClient.NAME)
+  private[this] val client = factory getSingleton PAClient.NAME
   private[this] val oasis  = context actorOf (OasisClient props, OasisClient.NAME)
   private[this] val api    = context actorOf (PAApi props (client, oasis),PAApi.NAME)
 
@@ -34,7 +35,7 @@ class PAApp(implicit factory: ActorFactory) extends ActorL
 
   override def receive =
   {
-    case Terminated(ref) => log info s"Actor已经关闭: ${ref.path}"
+    case Terminated(ref) => log info s"Actor已经停止: ${ref.path}"
       context.system terminate
   }
 }

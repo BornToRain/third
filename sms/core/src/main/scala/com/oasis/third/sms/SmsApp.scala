@@ -33,7 +33,7 @@ class SmsApp(implicit factory: ActorFactory) extends ActorL
   private[this] val mongodb     = MongoDBClient(factory.config).db
   private[this] val repository  = SmsRepositoryImpl(mongodb)
   private[this] val alibaba     = context actorOf (AlibabaClient props, AlibabaClient.NAME)
-  private[this] val domain      = factory singleton (SmsAggregate props, SmsAggregate.NAME)
+  private[this] val domain      = factory shard (SmsAggregate props, SmsAggregate.NAME)
   private[this] val read        = context actorOf (SmsReadSide props (readJournal, repository), SmsReadSide.NAME)
   private[this] val service     = context actorOf (SmsService props (domain, alibaba), SmsService.NAME)
   private[this] val api         = context actorOf (SmsApi props service, SmsApi.NAME)
@@ -42,7 +42,7 @@ class SmsApp(implicit factory: ActorFactory) extends ActorL
 
   override def receive =
   {
-    case Terminated(ref) => log info s"Actor已经关闭: ${ref.path}"
+    case Terminated(ref) => log info s"Actor已经停止: ${ref.path}"
       context.system terminate
   }
 }

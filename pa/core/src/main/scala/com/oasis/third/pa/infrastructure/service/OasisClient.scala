@@ -16,7 +16,7 @@ import scala.concurrent.Future
 /**
   * 泓华客户端
   */
-case class OasisClient(implicit runtime: ActorRuntime) extends ActorL with JsonSupport
+class OasisClient(implicit runtime: ActorRuntime) extends ActorL with JsonSupport
 {
   import runtime._
 

@@ -14,7 +14,7 @@ import com.oasis.third.pa.infrastructure.service.PAClient.OrderDetail
 import com.oasis.third.pa.infrastructure.service.PAClient.request.GetAccessToken
 import com.oasis.third.pa.protocol.PARequest.Pay
 import com.paic.palife.common.util.encry.la.LASecurityUtils
-import io.circe.JsonObject
+import io.circe.{Json, JsonObject}
 import io.circe.syntax._
 import org.ryze.micro.core.actor.{ActorL, ActorRuntime}
 import org.ryze.micro.core.http.JsonSupport
@@ -27,7 +27,7 @@ import scala.concurrent.duration._
 /**
   * 平安金管家客户端
   */
-case class PAClient(implicit runtime: ActorRuntime) extends ActorL with JsonSupport
+class PAClient(implicit runtime: ActorRuntime) extends ActorL with JsonSupport
 {
   import runtime._
 
@@ -52,7 +52,7 @@ case class PAClient(implicit runtime: ActorRuntime) extends ActorL with JsonSupp
   private[this] def get(uri: String, qs: (String, String)*) = for
   {
     a <- Http() singleRequest HttpRequest(uri = Uri(uri) withQuery Query(qs: _*))
-    b <- convert(a).to[JsonObject]
+    b <- convert(a).to[Json]
   } yield b
   @inline
   private[this] def post(uri: String, entity: Map[String, String]) = for
@@ -64,7 +64,7 @@ case class PAClient(implicit runtime: ActorRuntime) extends ActorL with JsonSupp
         //一定要记得最后那个&不要去掉，平安那狗第三方就这么要求的。
         string      = entity.toList.sorted map (t => s"${t._1}=${t._2}&") reduce (_+_)
       )
-      log info s"$e"
+      log info s"金管家POST: $e"
       e
     }
     b <- Http() singleRequest (HttpRequest(HttpMethods.POST, Uri(s"${PAClient.gateway}$uri"), entity = a) withHeaders RawHeader("Accept",
@@ -86,7 +86,7 @@ case class PAClient(implicit runtime: ActorRuntime) extends ActorL with JsonSupp
         "grant_type" -> "client_credentials") map
   {
     d =>
-      val ac = d("data") map (_.hcursor.get[String]("access_token") getOrElse "") getOrElse ""
+      val ac = (d.hcursor downField "data" downField "access_token").as[String] getOrElse ""
       log info s"获取金管家AccessToken成功: $ac"
       accessToken = ac
   } recover

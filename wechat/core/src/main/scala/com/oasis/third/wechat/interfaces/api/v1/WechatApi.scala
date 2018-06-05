@@ -4,20 +4,20 @@ import akka.actor.{Actor, ActorRef, Props}
 import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
+import akka.http.scaladsl.model.StatusCodes._
 import akka.pattern._
+import com.oasis.third.wechat.Result
 import com.oasis.third.wechat.infrastructure.service.PaymentClient.Request
-import com.oasis.third.wechat.infrastructure.service.PaymentClient.response.{JS, Response}
+import com.oasis.third.wechat.infrastructure.service.PaymentClient.response.JS
 import com.oasis.third.wechat.infrastructure.service.WechatClient.request._
 import com.oasis.third.wechat.infrastructure.service.WechatClient.response.JsSDK
-import com.oasis.third.wechat.infrastructure.tool.XMLTool
-import com.oasis.third.wechat.infrastructure.tool.CommonTool
+import com.oasis.third.wechat.infrastructure.tool.{CommonTool, XMLTool}
 import com.oasis.third.wechat.interfaces.dto.{Text, WechatDTO}
-import io.circe.JsonObject
 import org.ryze.micro.core.actor.{ActorL, ActorRuntime}
 import org.ryze.micro.core.http.RestApi
 import org.ryze.micro.core.tool.{ConfigLoader, DateTool}
 
-import scala.util.{Failure, Random, Success}
+import scala.util.{Failure, Success}
 import scala.xml.XML
 
 class WechatApi
@@ -43,11 +43,11 @@ class WechatApi
         //校验微信服务器
         (get & parameters('signature, 'timestamp, 'nonce, 'echostr))
         {
-          (a, b, c, d) => onSuccess((client ? Check(a, b, c)).mapTo[Option[Boolean]])
+          (a, b, c, d) => onSuccess((client ? Check(a, b, c)).mapTo[Boolean])
           {
             //微信必须要字符串不是JSON字符串 即content非"content"
-            case Some(true) => complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, d))
-            case _          => complete("")
+            case true => complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, d))
+            case _    => complete("")
           }
         } ~
         //处理微信请求
@@ -70,9 +70,10 @@ class WechatApi
       //code获取OAuth2
       (path("oauth2") & parameter('code))
       {
-        r => complete
+        r => onSuccess((client ? GetOAuth2(r)).mapTo[Result[Map[String, String]]])
         {
-          (client ? GetOAuth2(r)).mapTo[JsonObject] map ("openid" -> _("openid"))
+          case Right(d) => complete(d)
+          case Left(e)  => complete(BadRequest -> e)
         }
       } ~
       //获取js-sdk
@@ -88,18 +89,20 @@ class WechatApi
         //公众号支付
         (post & entity(as[Request]))
         {
-          r => complete
+          r => onSuccess((payment ? r).mapTo[Result[JS]])
           {
-            (payment ? r).mapTo[JS]
+            case Right(d) => complete(d)
+            case Left(e)  => complete(BadRequest -> e)
           }
         }
       } ~
       //小程序支付
       (path("applet") & post & entity(as[Request]))
       {
-        r => complete
+        r => onSuccess((payment ? r).mapTo[Result[JS]])
         {
-          (payment ? r).mapTo[JS]
+          case Right(d) => complete(d)
+          case Left(e)  => complete(BadRequest -> e)
         }
       }
     }

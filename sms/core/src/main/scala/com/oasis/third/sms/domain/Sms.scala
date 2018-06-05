@@ -52,7 +52,7 @@ object Sms
   final def validate(r: Create) = for
   {
     _ <- validateMobile(r.mobile)
-    _ <- validateType(r.`type`)
+    _ <- validateType(r.smsType)
   } yield r
   /**
     * 校验请求校验
@@ -61,7 +61,7 @@ object Sms
   final def validate(r: Validate) = for
   {
     _ <- validateMobile(r.mobile)
-    _ <- validateType(r.`type`)
+    _ <- validateType(r.smsType)
     _ <- validateCaptcha(Some(r.captcha))
   } yield r
   /**

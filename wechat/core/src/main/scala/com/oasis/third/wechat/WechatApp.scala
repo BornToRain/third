@@ -19,15 +19,16 @@ class WechatApp(implicit factory: ActorFactory) extends ActorL
 {
   import factory.runtime
 
+  factory singleton (WechatClient props, WechatClient.NAME)
   private[this] val payment = context actorOf (PaymentClient props, PaymentClient.NAME)
-  private[this] val client  = factory singleton (WechatClient props, WechatClient.NAME)
+  private[this] val client  = factory getSingleton WechatClient.NAME
   private[this] val api     = context actorOf (WechatApi props (client, payment), WechatApi.NAME)
 
   Seq(payment, client, api) foreach (context watch)
 
   override def receive =
   {
-    case Terminated(ref) => log info s"Actor已经关闭: ${ref.path}"
+    case Terminated(ref) => log info s"Actor已经停止: ${ref.path}"
       context.system terminate
   }
 }

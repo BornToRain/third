@@ -1,4 +1,5 @@
 import Dependencies._
+import sbtassembly.AssemblyPlugin.autoImport.PathList
 
 //微信核心实现
 lazy val `wechat-core` = (project in file ("core"))
@@ -10,6 +11,13 @@ lazy val `wechat-core` = (project in file ("core"))
   ),
   mainClass       in assembly := Some("com.oasis.third.wechat.WechatAppStartUp"),
   assemblyJarName in assembly := "wechat.jar",
-  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+  assemblyMergeStrategy in assembly :=
+  {
+    case PathList(xs @ _*) if (xs.last endsWith "XmlPullParser.class") || (xs.last endsWith "XmlPullParserException.class") => MergeStrategy.first
+    case x                                                                                                                  =>
+      val oldStrategy = (assemblyMergeStrategy in assembly).value
+      oldStrategy(x)
+  }
 )
 .dependsOn(LocalProject("core"))
+

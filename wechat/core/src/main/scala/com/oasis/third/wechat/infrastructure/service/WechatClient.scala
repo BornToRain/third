@@ -6,8 +6,9 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.pattern._
-import io.circe.JsonObject
+import io.circe.Json
 import org.ryze.micro.core.actor.{ActorL, ActorRuntime}
+import org.ryze.micro.core.domain.DomainError
 import org.ryze.micro.core.http.JsonSupport
 import org.ryze.micro.core.tool.{ConfigLoader, SHA1}
 
@@ -49,13 +50,13 @@ class WechatClient(implicit runtime: ActorRuntime) extends ActorL with JsonSuppo
     else qs
   }
   @inline
-  private[this] def convert(response: HttpResponse) = Unmarshal(response.entity)
+  private[this] def convert(response: HttpResponse) = Unmarshal(response.entity withContentType ContentTypes.`application/json`)
   @inline
   private[this] def get(uri: String, qs: (String, String)*) = for
   {
     a <- replaceAccessToken(qs: _*)
     b <- Http() singleRequest HttpRequest(uri = Uri(s"$gateway$uri") withQuery Query(a: _*))
-    c <- convert(b).to[JsonObject]
+    c <- convert(b).to[Json]
   } yield c
   @inline
   private[this] def post(uri: String, entity: Future[RequestEntity], qs: (String, String)*) = for
@@ -63,7 +64,7 @@ class WechatClient(implicit runtime: ActorRuntime) extends ActorL with JsonSuppo
     a <- replaceAccessToken(qs: _*)
     b <- entity
     c <- Http() singleRequest HttpRequest(HttpMethods.POST, Uri(s"$gateway$uri") withQuery Query(a: _*), entity = b)
-    d <- convert(c).to[JsonObject]
+    d <- convert(c).to[Json]
   } yield d
   /**
     * 校验微信服务器签名
@@ -74,7 +75,7 @@ class WechatClient(implicit runtime: ActorRuntime) extends ActorL with JsonSuppo
     */
   @inline
   private[this] def check(signature: String, timestamp: String, nonce: String) =
-    Option(SHA1 encode ("" /: Seq(token, timestamp, nonce).sorted)(_ + _) equalsIgnoreCase signature)
+    SHA1 encode ("" /: Seq(token, timestamp, nonce).sorted)(_ + _) equalsIgnoreCase signature
   /**
     * JS-SDK签名
     * 1.排序
@@ -89,7 +90,8 @@ class WechatClient(implicit runtime: ActorRuntime) extends ActorL with JsonSuppo
   private[this] def getAccessToken = get("cgi-bin/token", "grant_type" -> "client_credential",
     "appid" -> appId, "secret" -> secret) map
   {
-    d => val ac = d("access_token") map(_.asString.get) getOrElse ""
+    d =>
+      val ac = (d.hcursor downField "access_token").as[String] getOrElse ""
       log info s"获取微信AccessToken成功: $ac"
       accessToken = ac
   } recover
@@ -100,7 +102,8 @@ class WechatClient(implicit runtime: ActorRuntime) extends ActorL with JsonSuppo
   @inline
   private[this] def getJsApiTicket = get("cgi-bin/ticket/getticket", "access_token" -> "#", "type" -> "jsapi") map
   {
-    d => val ticket = d("ticket") map(_.asString.get) getOrElse ""
+    d =>
+      val ticket = (d.hcursor downField "ticket").as[String] getOrElse ""
       log info s"获取微信JsApiTicket成功: $ticket"
       jsApiTicket = ticket
   } recover
@@ -109,18 +112,29 @@ class WechatClient(implicit runtime: ActorRuntime) extends ActorL with JsonSuppo
   }
   @inline
   private[this] def getOAuth2(code: String) = get("sns/oauth2/access_token", "appid" -> WechatClient.appId,
-    "secret" -> WechatClient.secret, "code" -> code, "grant_type" -> "authorization_code")
+    "secret" -> WechatClient.secret, "code" -> code, "grant_type" -> "authorization_code") map
+  {
+    _.hcursor.downField ("openid").as[String] match
+    {
+      case Right(d) => Right(Map("openid" -> d))
+      case Left(e)  => Left(DomainError(0, "获取OpenId失败"))
+    }
+  }
 
   override def receive =
   {
     //获取AccessToken
-    case GetAccessToken                      => sender ! accessToken
+    case GetAccessToken                      => log info "AccessToken"
+      sender ! accessToken
     //获取JsApiTicket
-    case GetJsApiTicket                      => sender ! jsApiTicket
+    case GetJsApiTicket                      => log info "JsApiTicket"
+      sender ! jsApiTicket
     //code换取OAuth2
     case GetOAuth2(code)                     => getOAuth2(code) pipeTo sender
     //校验微信服务器签名
-    case Check(signature, timestamp, nonce)  => sender ! check(signature, timestamp, nonce)
+    case Check(signature, timestamp, nonce)  =>
+      log info "校验微信服务器"
+      sender ! check(signature, timestamp, nonce)
     //获取Js-sdk签名
     case GetJsSign(timeStamp, nonceStr, uri) => val sign = jsSign(timeStamp, nonceStr, uri)
       sender ! JsSDK(appId, timeStamp, nonceStr, sign)
