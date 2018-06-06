@@ -33,10 +33,13 @@ extends ActorL
   {
     case e: Bound         =>
       //存储30分钟
-      redis set (s"$key_binding${e.call}", e.to, Some(30.minutes toSeconds))
+      redis set (s"$KEY_BINDING${e.call}", e.to, Some(30.minutes toSeconds))
       repository insert (Call create e)
-    case e: Updated       => OptionT(repository selectOne e.id) map (_ update e)
-    case GetStateBy(call) => redis.get[String](s"$key_binding$call") pipeTo sender
+    case e: Updated       =>
+      //删除绑定关系
+      redis del s"$KEY_BINDING${e.call}"
+      OptionT(repository selectOne e.id) map (_ update e)
+    case GetStateBy(call) => redis.get[String](s"$KEY_BINDING$call") pipeTo sender
   }
 }
 

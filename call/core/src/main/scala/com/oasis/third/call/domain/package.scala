@@ -3,7 +3,7 @@ package com.oasis.third.call
 package object domain
 {
   //RedisKey
-  final val key_binding = "binding=>"
+  final val KEY_BINDING = "binding=>"
 
   type Domain = Option[Call]
 }

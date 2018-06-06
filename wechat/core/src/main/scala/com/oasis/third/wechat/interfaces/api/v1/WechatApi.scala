@@ -92,7 +92,7 @@ class WechatApi
         {
           r =>
             val request = r copy (appid = Some(WechatClient.appId))
-            onSuccess((payment ? r).mapTo[Result[JS]])
+            onSuccess((payment ? request).mapTo[Result[JS]])
             {
               case Right(d) => complete(d)
               case Left(e)  => complete(BadRequest -> e)

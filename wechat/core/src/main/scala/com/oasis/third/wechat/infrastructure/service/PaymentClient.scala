@@ -58,7 +58,7 @@ class PaymentClient(implicit runtime: ActorRuntime) extends ActorL
   @inline
   private[this] def createSign(r: Seq[(String, Json)]) =
   {
-    val step1 = r filterNot(_._1 == "sign") sortBy(_._1)
+    val step1 = r filterNot(t => t._1 == "sign" || t._1 == "paySign") sortBy(_._1)
     val step2 = ("" /: step1)((s, t) => s + s"${t._1}=${t._2.asString getOrElse ""}&") + s"key=${WechatClient.key}"
     Some(MD5 encode step2 toUpperCase)
   }
@@ -79,7 +79,7 @@ class PaymentClient(implicit runtime: ActorRuntime) extends ActorL
           val js = JS(
             appId     = r.appid getOrElse WechatClient.appId,
             nonceStr  = CommonTool createRandom 32,
-            timeStamp = DateTool.timeStamp,
+            timeStamp = DateTool.timeStamp.toString,
             `package` = s"prepay_id=${d.prepay_id get}",
             signType  = "MD5"
           )
@@ -111,7 +111,6 @@ object PaymentClient
     sign            : Option[String] = None,
     sign_type       : Option[String] = Some("MD5"),
     body            : String,
-//    detail          : Option[String] = None,
     attach          : Option[String] = None,
     out_trade_no    : String,
     fee_type        : Option[String] = Some("CNY"),
@@ -148,6 +147,6 @@ object PaymentClient
       final def empty = Response("", "", "", "", "", "", "", "", "", "")
     }
 
-    case class JS(appId: String, nonceStr: String, timeStamp: Long, `package`: String, signType: String, paySign: Option[String] = None)
+    case class JS(appId: String, nonceStr: String, timeStamp: String, `package`: String, signType: String, paySign: Option[String] = None)
   }
 }

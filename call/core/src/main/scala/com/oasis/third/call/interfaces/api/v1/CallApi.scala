@@ -1,5 +1,7 @@
 package com.oasis.third.call.interfaces.api.v1
 
+import java.net.URLDecoder
+
 import akka.actor.{Actor, ActorRef, Props}
 import akka.event.Logging
 import akka.http.scaladsl.Http
@@ -39,7 +41,6 @@ class CallApi(service: ActorRef)(implicit runtime: ActorRuntime) extends RestApi
     */
   @inline
   private[this] def formMap(map: Map[String, String]) = Update(
-    id          = map("ActionID"),
     call        = map("CallNo"),
     to          = map("CalledNo"),
     `type`      = map.get("CallType"),
@@ -95,9 +96,9 @@ class CallApi(service: ActorRef)(implicit runtime: ActorRuntime) extends RestApi
         {
           uri => complete
           {
-            val map = convertMap(uri.rawQueryString.get)
+            val map = convertMap(URLDecoder decode (uri.rawQueryString.get, "UTF-8"))
             log info "+---------------------------------------------------------------------------------------------------------------------------+"
-            map foreach { case (k, v) => log.info(s"$k: $v") }
+            map.toList.sorted foreach { case (k, v) => log.info(s"$k: $v") }
             log info "+---------------------------------------------------------------------------------------------------------------------------+"
             val cmd = formMap(map)
             service ! cmd
