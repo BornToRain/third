@@ -29,17 +29,25 @@ extends ActorL
   //根据事件标签获取实时事件流
   readJournal eventsByTag (CallEvent.TAG, Offset.noOffset) map (_.event) runWith Sink.actorRef(self, "completed")
 
+  @inline
+  private[this] def getStateBy(call: String) = OptionT(redis.get[String](s"$KEY_BINDING$call")) map (_ split "|") value
+
   override def receive =
   {
     case e: Bound         =>
+      //懒得写解析,直接字符串|分割,第零个是id,第一个是被呼叫方.
       //存储30分钟
-      redis set (s"$KEY_BINDING${e.call}", e.to, Some(30.minutes toSeconds))
+      redis set (s"$KEY_BINDING${e.call}", s"${e.id}|${e.to}", Some(30.minutes toSeconds))
       repository insert (Call create e)
     case e: Updated       =>
       //删除绑定关系
       redis del s"$KEY_BINDING${e.call}"
-      OptionT(repository selectOne e.id) map (_ update e)
-    case GetStateBy(call) => redis.get[String](s"$KEY_BINDING$call") pipeTo sender
+      repository selectOne e.id map
+      {
+        case Some(d) => d update e
+        case _       =>
+      }
+    case GetStateBy(call) => getStateBy(call) pipeTo sender
   }
 }
 
@@ -50,4 +58,5 @@ object CallReadSide
   @inline
   final def props(readJournal: EventsByTagQuery, repository: CallRepository, redis: RedisClient)(implicit runtime: ActorRuntime) =
     Props(new CallReadSide(readJournal, repository, redis))
+
 }

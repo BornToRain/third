@@ -53,7 +53,7 @@ class CallService
   } yield b
   //获取绑定电话
   @inline
-  private[this] def getBindMobile(c: GetStateBy) = (read ? c).mapTo[Option[String]]
+  private[this] def getBindMobile(c: GetStateBy) = OptionT((read ? c).mapTo[Option[RedisCall]]) map (_(1)) value
   //更新通话
   @inline
   private[this] def update(cmd: Update) =
@@ -64,15 +64,18 @@ class CallService
       a <- cmd.beginTime
       b <- cmd.endTime
     } yield DateTool.compare(a, b, DateTool.SECONDS)
-    OptionT((domain ? (cmd copy (callTime = callTime))).mapTo[Domain]) map
+    for
     {
-      //回调地址存在则回调
-      d => if(d.noticeUri isDefined)
+      a <- (read ? GetStateBy(cmd.call)).mapTo[Option[RedisCall]]
+      b <- (domain ? (cmd copy (id = a map (_(0)) get, callTime = callTime))).mapTo[Domain]
+      _ <- b match
       {
-        val entity = HttpEntity(ContentTypes.`application/json`, printer pretty (CallAssembler toDTO d).asJson)
-        Http() singleRequest HttpRequest(HttpMethods.POST, uri = d.noticeUri get, entity = entity)
+        //回调地址存在则回调
+        case Some(d) if d.noticeUri isDefined =>
+          val entity = HttpEntity(ContentTypes.`application/json`, printer pretty (CallAssembler toDTO d).asJson)
+          Http() singleRequest HttpRequest(HttpMethods.POST, uri = d.noticeUri get, entity = entity)
       }
-    }
+    } yield b
   }
 
   override def receive =
@@ -91,7 +94,6 @@ class CallService
 object CallService
 {
   final val NAME = "call-service"
-
   @inline
   final def props(domain: ActorRef, read: ActorRef, moor: ActorRef)(implicit runtime: ActorRuntime) =
     Props(new CallService(domain, read, moor))

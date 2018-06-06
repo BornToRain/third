@@ -5,5 +5,6 @@ package object domain
   //RedisKey
   final val KEY_BINDING = "binding=>"
 
-  type Domain = Option[Call]
+  type Domain    = Option[Call]
+  type RedisCall = Array[String]
 }

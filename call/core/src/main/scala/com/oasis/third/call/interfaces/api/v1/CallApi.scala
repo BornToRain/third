@@ -41,6 +41,7 @@ class CallApi(service: ActorRef)(implicit runtime: ActorRuntime) extends RestApi
     */
   @inline
   private[this] def formMap(map: Map[String, String]) = Update(
+    id          = null,
     call        = map("CallNo"),
     to          = map("CalledNo"),
     `type`      = map.get("CallType"),
@@ -97,9 +98,7 @@ class CallApi(service: ActorRef)(implicit runtime: ActorRuntime) extends RestApi
           uri => complete
           {
             val map = convertMap(URLDecoder decode (uri.rawQueryString.get, "UTF-8"))
-            log info "+---------------------------------------------------------------------------------------------------------------------------+"
-            map.toList.sorted foreach { case (k, v) => log.info(s"$k: $v") }
-            log info "+---------------------------------------------------------------------------------------------------------------------------+"
+            map.toList.sorted foreach { case (k, v) => log info s"$k: $v" }
             val cmd = formMap(map)
             service ! cmd
             OK
