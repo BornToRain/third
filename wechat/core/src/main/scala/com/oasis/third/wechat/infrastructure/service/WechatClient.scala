@@ -149,13 +149,15 @@ object WechatClient extends ConfigLoader
 
   private[this] val wechatConfig = loader getConfig "wechat"
 
-  lazy val appId   = wechatConfig getString "app-id"
-  lazy val mchId   = wechatConfig getString "mch-id"
-  lazy val key     = wechatConfig getString "key"
-  lazy val secret  = wechatConfig getString "secret"
-  lazy val token   = wechatConfig getString "token"
-  lazy val gateway = "https://api.weixin.qq.com/"
-
+  lazy val appId      = wechatConfig getString "app-id"
+  lazy val appletId   = wechatConfig getString "applet-id"
+  lazy val mchId      = wechatConfig getString "mch-id"
+  lazy val key        = wechatConfig getString "key"
+  lazy val secret     = wechatConfig getString "secret"
+  lazy val token      = wechatConfig getString "token"
+  lazy val notify_Uri = wechatConfig getString "notify-uri"
+  lazy val gateway    = "https://api.weixin.qq.com/"
+  
   object request
   {
     case object GetAccessToken

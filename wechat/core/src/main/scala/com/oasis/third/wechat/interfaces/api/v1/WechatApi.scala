@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.pattern._
 import com.oasis.third.wechat.Result
+import com.oasis.third.wechat.infrastructure.service.WechatClient
 import com.oasis.third.wechat.infrastructure.service.PaymentClient.Request
 import com.oasis.third.wechat.infrastructure.service.PaymentClient.response.JS
 import com.oasis.third.wechat.infrastructure.service.WechatClient.request._
@@ -89,21 +90,25 @@ class WechatApi
         //公众号支付
         (post & entity(as[Request]))
         {
-          r => onSuccess((payment ? r).mapTo[Result[JS]])
-          {
-            case Right(d) => complete(d)
-            case Left(e)  => complete(BadRequest -> e)
-          }
+          r =>
+            val request = r copy (appid = Some(WechatClient.appId))
+            onSuccess((payment ? r).mapTo[Result[JS]])
+            {
+              case Right(d) => complete(d)
+              case Left(e)  => complete(BadRequest -> e)
+            }
         }
       } ~
       //小程序支付
       (path("applet") & post & entity(as[Request]))
       {
-        r => onSuccess((payment ? r).mapTo[Result[JS]])
-        {
-          case Right(d) => complete(d)
-          case Left(e)  => complete(BadRequest -> e)
-        }
+        r =>
+          val request = r copy (appid = Some(WechatClient.appletId))
+          onSuccess((payment ? request).mapTo[Result[JS]])
+          {
+            case Right(d) => complete(d)
+            case Left(e)  => complete(BadRequest -> e)
+          }
       }
     }
   }

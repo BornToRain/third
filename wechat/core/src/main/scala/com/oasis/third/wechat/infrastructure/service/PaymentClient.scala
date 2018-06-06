@@ -9,6 +9,7 @@ import cats.instances.future._
 import com.oasis.third.wechat.infrastructure.service.PaymentClient.Request
 import com.oasis.third.wechat.infrastructure.service.PaymentClient.response.{JS, Response}
 import com.oasis.third.wechat.infrastructure.tool.{CommonTool, XMLTool}
+import io.circe.Json
 import io.circe.generic.auto._
 import io.circe.syntax._
 import org.ryze.micro.core.actor.{ActorL, ActorRuntime}
@@ -38,27 +39,29 @@ class PaymentClient(implicit runtime: ActorRuntime) extends ActorL
     */
   @inline
   private[this] def assembly(r: Request) = r copy(
-    appid       = Some(r.appid getOrElse WechatClient.appId),
     mch_id      = Some(r.mch_id getOrElse WechatClient.mchId),
     device_info = Some("web"),
     sign_type   = Some("MD5"),
     fee_type    = Some("CNY"),
     total_fee   = (BigDecimal(r.total_fee) * 100).toInt.toString,
     nonce_str   = CommonTool createRandom 32,
-    notify_url  = Some(PaymentClient.notify_Uri)
+    notify_url  = Some(WechatClient.notify_Uri)
   )
 
   /**
     * 生成签名
     * 1.排序
-    * 2.key=value&
-    * 3.key
+    * 2.key=value&secretKey
     * 4.MD5加密
     * 5.转大写
     */
   @inline
-  private[this] def createSign(r: Seq[(String, Any)]) =
-    Option(MD5 encode (("" /: r.sortBy(_._1))((_, t) => s"${t._1}=${t._2}") + s"key=${WechatClient.key}") toUpperCase)
+  private[this] def createSign(r: Seq[(String, Json)]) =
+  {
+    val step1 = r filterNot(_._1 == "sign") sortBy(_._1)
+    val step2 = ("" /: step1)((s, t) => s + s"${t._1}=${t._2.asString getOrElse ""}&") + s"key=${WechatClient.key}"
+    Some(MD5 encode step2 toUpperCase)
+  }
   //付款
   @inline
   private[this] def payment(r: Request) =
@@ -67,7 +70,7 @@ class PaymentClient(implicit runtime: ActorRuntime) extends ActorL
     val data     = request copy (sign = createSign(request.asJsonObject.toList))
     val xml      = XMLTool toXML data
     log info s"发起微信支付: $xml"
-    val response = EitherT(post("/pay/unifiedorder", xml))
+    val response = EitherT(post("pay/unifiedorder", xml))
     response map
     {
       d => d.trade_type match
@@ -97,8 +100,7 @@ object PaymentClient
   @inline
   final def props(implicit runtime: ActorRuntime) = Props(new PaymentClient)
 
-  lazy val gateway    = "https://api.mch.weixin.qq.com"
-  lazy val notify_Uri = "https://buztest190.oasisapp.cn/honghclient/servlet/WeChatTrade"
+  lazy val gateway    = "https://api.mch.weixin.qq.com/"
 
   case class Request
   (
@@ -132,6 +134,9 @@ object PaymentClient
       nonce_str   : String,
       sign        : String,
       result_code : String,
+      err_code    : String,
+      err_code_des: String,
+      device_info : String,
 
       code_url    : Option[String] = None,
       trade_type  : Option[String] = None,
@@ -140,7 +145,7 @@ object PaymentClient
     object Response
     {
       @inline
-      final def empty = Response("", "", "", "", "", "", "")
+      final def empty = Response("", "", "", "", "", "", "", "", "", "")
     }
 
     case class JS(appId: String, nonceStr: String, timeStamp: Long, `package`: String, signType: String, paySign: Option[String] = None)
