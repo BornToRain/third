@@ -41,7 +41,7 @@ extends ActorL
       repository insert (Call create e)
     case e: Updated       =>
       //删除绑定关系
-      redis del s"$KEY_BINDING${e.call}"
+//      redis del s"$KEY_BINDING${e.call}"
       repository selectOne e.id map
       {
         case Some(d) => d update e

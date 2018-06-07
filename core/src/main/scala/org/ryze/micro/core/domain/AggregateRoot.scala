@@ -3,10 +3,9 @@ package org.ryze.micro.core.domain
 import akka.actor.ActorLogging
 import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.pubsub.DistributedPubSubMediator.Publish
-import akka.persistence.{PersistentActor, SnapshotOffer}
+import akka.persistence._
 import org.ryze.micro.protocol.domain.{DomainCommand, DomainEvent}
 
-import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
 /**
@@ -14,8 +13,6 @@ import scala.reflect.ClassTag
   */
 abstract class AggregateRoot[State: ClassTag, Command <: DomainCommand: ClassTag, Event <: DomainEvent: ClassTag] extends PersistentActor with ActorLogging
 {
-  private[this] var eventCount = 0
-
   @inline
   private[this] def reply(): Unit = sender ! state
   @inline
@@ -37,30 +34,31 @@ abstract class AggregateRoot[State: ClassTag, Command <: DomainCommand: ClassTag
   @inline
   def afterPersist(event: Event): Unit =
   {
-//    eventCount += 1
-//    if(eventCount == AggregateRoot.SNAPSHOT)
-//    {
-//      log debug "保存快照"
-//      saveSnapshot(state)
-//      eventCount = 0
-//    }
+    if(lastSequenceNr % AggregateRoot.SNAPSHOT == 0 && lastSequenceNr != 0)
+    {
+      log info "保存快照"
+      saveSnapshot(state.toString)
+    }
     updateState(event)
     reply()
     publish(event)
   }
 
   //1分钟钝化
-  override def preStart(): Unit = context setReceiveTimeout 1.minutes
+//  override def preStart(): Unit = context setReceiveTimeout 1.minutes
   override def receiveRecover =
   {
-    case SnapshotOffer(_, s: State) => state = s
+    case SnapshotOffer(m, s: State) => log info s"Loading snapshot at: ${m.sequenceNr} with state: $s"
+      log info s"Updated state to $state with snapshot"
+      println("Test")
+      state = s
+    case RecoveryCompleted          => log info s"RecoveryCompleted at: $lastSequenceNr with state: $state"
     case event: Event               => updateState(event)
-      //eventCount +=1
   }
 }
 
 object AggregateRoot
 {
   //10事件 => 1快照
-  final val SNAPSHOT = 10
+  final val SNAPSHOT = 2
 }

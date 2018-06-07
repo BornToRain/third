@@ -2,6 +2,7 @@ package com.oasis.third.call.domain
 
 import akka.actor.Props
 import akka.cluster.Cluster
+import akka.persistence.{SaveSnapshotSuccess, SnapshotSelectionCriteria}
 import com.oasis.third.call.domain.event.{Bound, HungUp, Updated}
 import com.oasis.third.call.protocol.{CallCommand, CallEvent}
 import com.oasis.third.call.protocol.CallCommand.{Bind, HangUp, Update}
