@@ -70,18 +70,6 @@ object Call
   private[this] def validateCall(call: String) = Regex.MOBILE findFirstIn call map (Right(_)) getOrElse Left(DomainError(0, "呼叫方错误!"))
   @inline
   private[this] def validateTo(to: String) = Regex.MOBILE findFirstIn to map (Right(_)) getOrElse Left(DomainError(1, "被呼叫方错误!"))
-  @inline
-  private[this] def validateNoticeUri(noticeUri: Option[String]) = noticeUri match
-  {
-    case s if s exists (Regex.URI.pattern matcher _ matches) => Right(s)
-    case _                                                   => Left(DomainError(2, "回调通知地址错误!"))
-  }
-  @inline
-  private[this] def validateThirdId(thirdId: Option[String]) = thirdId match
-  {
-    case s @ Some(_) => Right(s)
-    case _           => Left(DomainError(3, "第三方唯一标识为空!"))
-  }
 
   /**
     * 绑定请求校验
@@ -91,8 +79,6 @@ object Call
   {
     _ <- validateCall(r.call)
     _ <- validateTo(r.to)
-    _ <- validateNoticeUri(r.noticeUri)
-    _ <- validateThirdId(r.thirdId)
   } yield r
   /**
     * 创建

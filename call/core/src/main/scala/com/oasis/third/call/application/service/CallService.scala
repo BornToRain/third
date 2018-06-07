@@ -53,7 +53,7 @@ class CallService
   } yield b
   //获取绑定电话
   @inline
-  private[this] def getBindMobile(c: GetStateBy) = OptionT((read ? c).mapTo[Option[RedisCall]]) map (_(1)) value
+  private[this] def getBindMobile(cmd: GetStateBy) = OptionT((read ? cmd).mapTo[Option[RedisCall]]) map (_(1)) value
   //更新通话
   @inline
   private[this] def update(cmd: Update) =

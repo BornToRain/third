@@ -13,7 +13,7 @@ case class CallRepositoryImpl(db: Future[DefaultDB])(implicit runtime: ActorRunt
   import runtime._
 
   @inline
-  private[this] def collection: Future[BSONCollection] = db map (_ collection "sms")
+  private[this] def collection: Future[BSONCollection] = db map (_ collection "call")
   @inline
   private[this] def byId(id: String) = BSONDocument("_id" -> id)
 

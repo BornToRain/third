@@ -37,13 +37,13 @@ abstract class AggregateRoot[State: ClassTag, Command <: DomainCommand: ClassTag
   @inline
   def afterPersist(event: Event): Unit =
   {
-    eventCount += 1
-    if(eventCount == AggregateRoot.SNAPSHOT)
-    {
-      log debug "保存快照"
-      saveSnapshot(state)
-      eventCount = 0
-    }
+//    eventCount += 1
+//    if(eventCount == AggregateRoot.SNAPSHOT)
+//    {
+//      log debug "保存快照"
+//      saveSnapshot(state)
+//      eventCount = 0
+//    }
     updateState(event)
     reply()
     publish(event)
@@ -54,8 +54,8 @@ abstract class AggregateRoot[State: ClassTag, Command <: DomainCommand: ClassTag
   override def receiveRecover =
   {
     case SnapshotOffer(_, s: State) => state = s
-    case event: Event               => eventCount +=1
-      updateState(event)
+    case event: Event               => updateState(event)
+      //eventCount +=1
   }
 }
 

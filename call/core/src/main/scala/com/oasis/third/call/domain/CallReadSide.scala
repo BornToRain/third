@@ -30,14 +30,14 @@ extends ActorL
   readJournal eventsByTag (CallEvent.TAG, Offset.noOffset) map (_.event) runWith Sink.actorRef(self, "completed")
 
   @inline
-  private[this] def getStateBy(call: String) = OptionT(redis.get[String](s"$KEY_BINDING$call")) map (_ split "|") value
+  private[this] def getStateBy(call: String) = OptionT(redis.get[String](s"$KEY_BINDING$call")) map (_ split ",") value
 
   override def receive =
   {
     case e: Bound         =>
-      //懒得写解析,直接字符串|分割,第零个是id,第一个是被呼叫方.
+      //懒得写解析,直接字符串,分割,第一个是id,第二个是被呼叫方.
       //存储30分钟
-      redis set (s"$KEY_BINDING${e.call}", s"${e.id}|${e.to}", Some(30.minutes toSeconds))
+      redis set (s"$KEY_BINDING${e.call}", s"${e.id},${e.to}", Some(30.minutes toSeconds))
       repository insert (Call create e)
     case e: Updated       =>
       //删除绑定关系
