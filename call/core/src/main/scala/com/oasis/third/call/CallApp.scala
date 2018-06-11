@@ -34,7 +34,7 @@ class CallApp(implicit factory: ActorFactory) extends ActorL
   private[this] val redis       = RdsClient(factory.config).rds
   private[this] val mongodb     = MongoDBClient(factory.config).db
   private[this] val repository  = CallRepositoryImpl(mongodb)
-  private[this] val moor        = context actorOf(MoorClient props, MoorClient.NAME)
+  private[this] val moor        = context actorOf (MoorClient props, MoorClient.NAME)
   private[this] val domain      = factory shard (CallAggregate props, CallAggregate.NAME)
   private[this] val read        = context actorOf (CallReadSide props (readJournal, repository, redis), CallReadSide.NAME)
   private[this] val service     = context actorOf (CallService props (domain, read, moor), CallService.NAME)
@@ -52,7 +52,6 @@ class CallApp(implicit factory: ActorFactory) extends ActorL
 object CallApp
 {
   final val NAME = "call-app"
-
   @inline
   final def props(implicit factory: ActorFactory) = Props(new CallApp)
 }

@@ -123,7 +123,6 @@ object WechatApi extends ConfigLoader
 
   private[this] val httpConfig = loader getConfig "http"
 
-
   lazy val host = httpConfig getString "host"
   lazy val port = httpConfig getInt    "port"
 }
