@@ -39,6 +39,7 @@ case class ActorFactory(config: Config)
     settings         = ClusterShardingSettings(system) withRole domainName.name,
     messageExtractor = messageExtractor
   )
+  final def shardRegion(shardName: String) = ClusterSharding(system) shardRegion(shardName)
   /**
     * 创建代理
     */

@@ -45,7 +45,7 @@ object Dependencies
 
   object rxmongo
   {
-    lazy val rxmongo = apply("reactivemongo")
+    lazy val rxmongo       = apply("reactivemongo")
     lazy val rxmongoStream = apply("reactivemongo-akkastream")
 
     @inline
@@ -56,12 +56,9 @@ object Dependencies
   {
     //日志
     lazy val logback  = "ch.qos.logback"           %  "logback-classic"    % "1.2.3"
-    lazy val groovy   = "org.codehaus.groovy"      %  "groovy-all"         % "2.4.15"
     //Protobuf序列化
     lazy val protobuf = "com.thesamet.scalapb"     %% "scalapb-runtime"    % scalapb.compiler.Version.scalapbVersion % "protobuf"
-    //Redis
     lazy val redis    = "com.github.Ma27"         %% "rediscala"          % "1.8.3"
-    //xstream
     lazy val xstream  = "com.thoughtworks.xstream" %  "xstream"            % "1.4.10"
   }
 }

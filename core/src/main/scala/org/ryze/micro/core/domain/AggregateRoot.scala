@@ -50,7 +50,6 @@ abstract class AggregateRoot[State: ClassTag, Command <: DomainCommand: ClassTag
   {
     case SnapshotOffer(m, s: State) => log info s"Loading snapshot at: ${m.sequenceNr} with state: $s"
       log info s"Updated state to $state with snapshot"
-      println("Test")
       state = s
     case RecoveryCompleted          => log info s"RecoveryCompleted at: $lastSequenceNr with state: $state"
     case event: Event               => updateState(event)
